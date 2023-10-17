@@ -1,0 +1,37 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "mssqlOptions": {
+                "appName": "SQLTools",
+                "useUTC": true,
+                "encrypt": true
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "MSSQL",
+            "name": "mainDB",
+            "connectString": "DRIVER={ODBC Driver 17 for SQL Server};SERVER=tcp:sqlserver;DATABASE=CLS;ENCRYPT=no;UID=Webserver;PWD=Galaxy42"
+        },
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "regSystem",
+            "database": "${workspaceFolder:RegistrationPortal}/college_registration_system/db.sqlite3"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "registration",
+            "database": "registration",
+            "username": "root",
+            "password": "zKF3@Ty!!"
+        }
+    ]
+}

@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Michael Hawk University</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'globals.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+
+    <style>
+        /* DataTables */
+        #cont {
+            background-color: var(--secondary-color);
+            drop-shadow: 0px 0px 40px var(--accent-color);
+            border-radius: 20px;
+        }
+        #scheduleTable_wrapper {
+            color: var(--black);
+        }
+        #scheduleTable thead {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
+        #scheduleTable tbody tr:nth-child(odd) {
+            background-color: var(--accent-color);
+        }
+        #scheduleTable tbody tr:nth-child(even) {
+            background-color: var(--secondary-accent-color);
+        }
+    </style>
+</head>
+<body style = 'background-color:var(--primary-color)'>
+
+<nav class="navbar navbar-expand-lg navbar-dark" style='background-color:var(--secondary-color); color:var(--primary-color)'>
+  <a class="navbar-brand" href="#" >Michael Hawk University</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/schedule/">Schedule</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/profile/">Profile</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/logout/">Logout</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div id='cont' class="container mt-5 center-block text-center" >
+    <h1 style="color:var(--accent-color)" >Master Schedule</h1>
+    <table id="scheduleTable" >
+        <thead>
+            <tr>
+                <th>CRN</th>
+                <th>Course</th>
+                <th>Department</th>
+                <th>Credits</th>
+                <th>Professor</th>
+                <th>Room</th>
+                <th>Timeslot</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for section in sections %}
+            <tr>
+                <td>{{ section.crn }}</td>
+                <td>{{ section.course }}</td>
+                <td>{{ section.department}}</td>
+                <td>{{ section.credits }}</td>
+                <td>{{ section.faculty.user.first_name }} {{ section.faculty.user.last_name }}</td>
+                <td>{{section.room}}</td>
+                <td>{{ section.days }}:<br></br> {{ section.timeslot }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+<script>
+    $(document).ready( function () {
+        $('#scheduleTable').DataTable();
+        //append register button on each row in last column
+        $('#scheduleTable tbody tr').each(function() {
+            $(this).append('<td><a href="/register/{{ section.id }}/" class="btn btn-primary">Register</a></td>');
+        });
+    });
+</script>
+</html>

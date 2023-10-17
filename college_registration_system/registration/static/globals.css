@@ -1,0 +1,10 @@
+:root {
+    --primary-color: #2A9D8F;
+    --secondary-color: #264653;
+    --accent-color: #EADDA3;  /* Pale Yellow */
+    --secondary-accent-color: #F5CBA1;  /* Pale Orange */
+    --tertiary-color: #E76F51;
+    --white: #FFFFFF;
+    --black: #000000;
+    /* Add more variables here */
+}

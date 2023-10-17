@@ -17,7 +17,7 @@ def user_login(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        if email and password:  # Check if email and password are not None
+        if email and password:  # Check if email and password are not Nonew
             userlogin = authenticate(request, email=email, password=password)
         else:
             error_message = "Email and/or Password cannot be blank."

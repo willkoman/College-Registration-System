@@ -7,7 +7,8 @@ from .models import CourseSection, Login, User, Admin, Student, Faculty,Faculty_
 
 @login_required
 def root_redirect(request):
-    if request.user.user.user_type=='Admin':  # Assuming you have a field to identify superusers
+    #if login that has that user is superuser, redirect to admin page
+    if request.user.is_superuser:
         return redirect('/admin/')
     else:
         return redirect('/homepage/')

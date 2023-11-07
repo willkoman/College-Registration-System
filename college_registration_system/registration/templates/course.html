@@ -15,6 +15,15 @@
                 <strong>Type:</strong> 
                 {{ course.course_type }}
             </p>
+            {% if prereqs %}
+            <p class="card-text"><strong>Prerequisites:</strong></p>
+            <ul>
+                {% for prereq in prereqs %}
+                <li>{{ prereq.pr_course }}</li>
+                <p style="font-size:12px">Minimum Grade: {{prereq.min_grade}}</p>
+                {% endfor %}
+            </ul>
+            {% endif %}
         </div>
     </div>
 </div>

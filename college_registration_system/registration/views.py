@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse
-from .models import CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
+from .models import CoursePrereq, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
 
 @login_required
@@ -191,6 +191,8 @@ def enrollment_view(request):
     return render(request, 'enrollment.html', context)
 
 def register(request, section_id):
+    #distionary assigning number to grade
+    grade_dict = {'A':4,'B':3,'C':2,'D':1,'F':0,'NA':0}
     try:
         student = request.user.user.student
         section = CourseSection.objects.get(crn=section_id)
@@ -203,6 +205,14 @@ def register(request, section_id):
         #if same timeslot in coursesection already in enrollment, raise exception
         if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
             raise Exception("You have already registered for a course in this timeslot.")
+        if CoursePrereq.objects.filter(course=section.course).exists():
+            prereqs = CoursePrereq.objects.filter(course=section.course)
+            for prereq in prereqs:
+                if not StudentHistory.objects.filter(student=student, section__course=prereq.pr_course).exists():
+                    raise Exception(f"You have not completed the prerequisite course: {prereq.pr_course}")
+                elif grade_dict[StudentHistory.objects.get(student=student, section__course=prereq.pr_course).grade] < grade_dict[prereq.min_grade]:
+                    raise Exception(f"You have not achieved a high enough grade for: {prereq.pr_course}")
+
         enrollment.save()
         # Add a success message
         messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
@@ -233,6 +243,8 @@ def course_view(request,course_id):
     }
     course = Course.objects.get(course_id=course_id)
     context['course'] = course
+    prereqs = CoursePrereq.objects.filter(course=course)
+    context['prereqs'] = prereqs
     return render(request, 'course.html', context)
 
 def faculty_directory(request):

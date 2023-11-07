@@ -6,8 +6,6 @@ from .models import (
     Course, CoursePrereq, Enrollment, StudentHistory, FacultyHistory, Attendance, Hold,
     Timeslot, Day, Period, Major, Minor
 )
-from django.db.models import F, Value, CharField, Func, IntegerField
-from django.db.models.functions import Concat, Cast
 
 from django.contrib.auth.hashers import make_password
 

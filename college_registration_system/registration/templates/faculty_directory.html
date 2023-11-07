@@ -6,7 +6,7 @@
         <tr>
             <th>Name</th>
             <th>Rank</th>
-            <th>Department</th>
+            <th>Department(s)</th>
             <th>Specialty</th>
             <th>Type</th>
             <th>Office</th>
@@ -17,7 +17,9 @@
         <tr>
             <td><a href="/faculty/{{faculty_member.user.id}}/">{{ faculty_member.user.first_name }} {{faculty_member.user.last_name}}</a></td>
             <td>{{ faculty_member.get_rank_display }}</td>
-            <td>{{ faculty_member.department }}</td>
+            <td>{% for dept in faculty_member.departments.all %}
+                {{ dept.department_name }}{% if not forloop.last %},{% endif %}
+              {% endfor %}</td>
             <td>{{ faculty_member.specialty }}</td>
             <td>{{ faculty_member.get_fac_type_display }}</td>
             <td>

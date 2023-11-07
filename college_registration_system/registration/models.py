@@ -312,7 +312,8 @@ class Faculty(models.Model):
         # Add other ranks as needed
     ]
     rank = models.CharField(max_length=8, choices=RANK_CHOICES)
-    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True)
+    #can be multiple departments. Should be a foreign key list
+    departments = models.ManyToManyField('Department')
     specialty = models.CharField(max_length=50)
     FAC_TYPE_CHOICES = [
         ('FT', 'Full-Time'),
@@ -441,7 +442,8 @@ class Semester(models.Model):
 class CourseSection(models.Model):
     crn = models.CharField(max_length=10, primary_key=True)
     course = models.ForeignKey('Course', on_delete=models.CASCADE)
-    faculty = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True)
+    #faculty must have department in departments that is in Course.department
+    faculty = models.ForeignKey('Faculty', on_delete=models.SET_NULL, null=True)
     timeslot = models.ForeignKey('Timeslot', on_delete=models.SET_NULL, null=True)
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True)
     semester = models.ForeignKey(Semester, on_delete=models.SET_NULL, null=True)

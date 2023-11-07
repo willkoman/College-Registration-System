@@ -42,7 +42,7 @@ urlpatterns = [
     path('dropcourse/<int:section_id>/', views.drop_course, name='drop_course'),
     path('course/<int:course_id>/', views.course_view, name='course_view'),
     path('faculty-directory/', views.faculty_directory, name='faculty_directory'),
-    path('faculty/<int:faculty_id>/', views.faculty_view, name='faculty_view'),
+    path('faculty/<str:user_id>/', views.faculty_view, name='faculty_view'),
     path('department-directory/', views.department_directory, name='department_directory'),
     path('major-directory/', views.major_directory, name='major_directory'),
 ]

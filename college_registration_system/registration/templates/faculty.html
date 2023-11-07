@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- HTML for displaying a specific faculty's information -->
+<div class="faculty-info">
+    <h2>Faculty Details</h2>
+    <p><strong>Name:</strong> {{ faculty.user.first_name }} {{faculty.user.last_name }}</p>
+    <p><strong>Rank:</strong> {{ faculty.get_rank_display }}</p>
+    <p><strong>Department:</strong> {{ faculty.department }}</p>
+    <p><strong>Specialty:</strong> {{ faculty.specialty }}</p>
+    <p><strong>Type:</strong> {{ faculty.get_fac_type_display }}</p>
+    <p><strong>Office:</strong> {{ office}}</p>
+    <p><strong>Email:</strong> {{ faculty.user.email }}</p>
+    <p><strong>Phone:</strong> {{ faculty.user.phone }}</p>
+</div>
+{% endblock %}

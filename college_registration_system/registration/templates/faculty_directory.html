@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table id="facultyTable" class="display">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Department</th>
+            <th>Specialty</th>
+            <th>Type</th>
+            <th>Office</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for faculty_member in faculty %}
+        <tr>
+            <td>{{ faculty_member.user.first_name }} {{faculty_member.user.last_name}}</td>
+            <td>{{ faculty_member.get_rank_display }}</td>
+            <td>{{ faculty_member.department }}</td>
+            <td>{{ faculty_member.specialty }}</td>
+            <td>{{ faculty_member.get_fac_type_display }}</td>
+            <td>
+                {% if faculty_member.fac_type == 'FT' %}
+                    {{ faculty_member.faculty_fulltime.office }}
+                {% else %}
+                    {{ faculty_member.faculty_parttime.office }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function () {
+    $('#facultyTable').DataTable();
+});
+</script>
+{% endblock %}

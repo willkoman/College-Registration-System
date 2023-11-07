@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table id='departmentTable'>
+  <thead>
+    <tr>
+      <th>Department</th>
+      <th>Chair</th>
+      <th>Manager</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>Room</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for department in departments %}
+      <tr>
+        <td>{{ department.department_name }}</td>
+        <td>{{ department.chair_id.user.first_name }} {{ department.chair_id.user.last_name }}</td>
+        <td>{{ department.manager_id.user.first_name }} {{ department.manager_id.user.last_name }}</td>
+        <td>{{ department.email }}</td>
+        <td>{{ department.phone }}</td>
+        <td>{{ department.room_id }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+{% block script %}
+<script>
+  $(document).ready(function() {
+    $('#departmentTable').DataTable();
+  } );
+</script>
+{% endblock %}
+

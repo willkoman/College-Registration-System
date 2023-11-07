@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student History</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'globals.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+
+    <style>
+        /* DataTables */
+        #cont {
+            background-color: var(--secondary-color);
+            drop-shadow: 0px 0px 40px var(--accent-color);
+            border-radius: 20px;
+        }
+        #studentHistoryTable_wrapper {
+            color: var(--black);
+        }
+        #studentHistoryTable thead {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
+        #studentHistoryTable tbody tr:nth-child(odd) {
+            background-color: var(--accent-color);
+        }
+        #studentHistoryTable tbody tr:nth-child(even) {
+            background-color: var(--secondary-accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Student History</h1>
+    
+        <table class="table table-bordered" id="studentHistoryTable">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Department</th>
+                    <th>Grade</th> <!-- Added Grade column -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in student_history %}
+                    <tr>
+                        <td>{{ course.course.course_name }}</td>
+                        <td>{{ course.course.department }}</td>
+                        <td>{{ course.grade }}</td>  
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>    
+</body>
+</html>

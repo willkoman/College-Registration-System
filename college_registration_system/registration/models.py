@@ -455,7 +455,7 @@ def create_faculty_history(sender, instance, created, **kwargs):
     if created:
         FacultyHistory.objects.create(
             faculty=instance.faculty,
-            class_obj=instance,
+            section=instance,
             course=instance.course,
             semester=instance.semester
         )
@@ -467,7 +467,7 @@ def create_faculty_history(sender, instance, created, **kwargs):
     else:
         FacultyHistory.objects.filter(
             faculty=instance.faculty,
-            class_obj=instance,
+            section=instance,
             course=instance.course,
             semester=instance.semester
         ).update()
@@ -481,7 +481,7 @@ def create_faculty_history(sender, instance, created, **kwargs):
 def delete_faculty_history(sender, instance, **kwargs):
     fh = FacultyHistory.objects.filter(
         faculty=instance.faculty,
-        class_obj=instance,
+        section=instance,
         course=instance.course,
         semester=instance.semester
     )
@@ -519,48 +519,48 @@ class CoursePrereq(models.Model):
 # Enrollment Model
 class Enrollment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    class_obj = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
+    section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
     grade = models.CharField(max_length=2, null=True,blank=True)
     date_of_enrollment = models.DateField()
 
     def __str__(self):
-        return self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.class_obj.course.course_name + ' : '+str(self.grade)
+        return self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.section.course.course_name + ' : '+str(self.grade)
 
 @receiver(post_save, sender=Enrollment)
 def create_student_history(sender, instance, created, **kwargs):
     if created:
         StudentHistory.objects.create(
             student=instance.student,
-            class_obj=instance.class_obj,
-            course=instance.class_obj.course,
-            semester=instance.class_obj.semester,
+            section=instance.section,
+            course=instance.section.course,
+            semester=instance.section.semester,
             grade=instance.grade
         )
     else:
         StudentHistory.objects.filter(
             student=instance.student,
-            class_obj=instance.class_obj,
-            course=instance.class_obj.course,
-            semester=instance.class_obj.semester
+            section=instance.section,
+            course=instance.section.course,
+            semester=instance.section.semester
         ).update(grade=instance.grade)
 
 
 # StudentHistory Model
 class StudentHistory(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    class_obj = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
+    section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     grade = models.CharField(max_length=2)
 
     def __str__(self):
-        return self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.class_obj.course.course_name + ' : '+self.grade
+        return self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.section.course.course_name + ' : '+self.grade
 
 @receiver(post_delete, sender=StudentHistory)
 def delete_student_history(sender, instance, **kwargs):
     Enrollment.objects.filter(
         student=instance.student,
-        class_obj=instance.class_obj,
+        section=instance.section,
         id=instance.id
     ).delete()
 
@@ -568,24 +568,24 @@ def delete_student_history(sender, instance, **kwargs):
 # FacultyHistory Model
 class FacultyHistory(models.Model):
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
-    class_obj = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
+    section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.faculty.user.first_name + ' ' + self.faculty.user.last_name+' - '+self.class_obj.course.course_name
+        return self.faculty.user.first_name + ' ' + self.faculty.user.last_name+' - '+self.section.course.course_name
 
 
 # Attendance Model
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    class_obj = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
+    section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_of_class = models.DateField()
     present = models.BooleanField()
 
     def __str__(self):
-        return str(self.date_of_class)+': '+self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.class_obj.course.course_name + ' - Present:'+str(self.present)
+        return str(self.date_of_class)+': '+self.student.user.first_name + ' ' + self.student.user.last_name+' - '+self.section.course.course_name + ' - Present:'+str(self.present)
 
 # Hold Model
 class Hold(models.Model):

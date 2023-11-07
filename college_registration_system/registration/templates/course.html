@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Course Details</h1>
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">{{ course.department.department_id }}{{ course.course_number }}: {{ course.course_name }}</h2>
+            <p class="card-text"><strong>Department:</strong> {{ course.department }}</p>
+            <p class="card-text"><strong>Credits:</strong> {{ course.no_of_credits }}</p>
+            <p class="card-text"><strong>Description:</strong> {{ course.description }}</p>
+            <p class="card-text">
+                <strong>Type:</strong> 
+                {{ course.course_type }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

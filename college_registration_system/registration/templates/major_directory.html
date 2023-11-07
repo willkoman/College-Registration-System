@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- HTML for Major Directory table -->
+<h2>Major Directory</h2>
+<table id="majorTable" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Major Name</th>
+            <th>Department</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for major in majors %}
+        <tr>
+            <td>{{ major.major_name }}</td>
+            <td>{{ major.department.department_name }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Major Name</th>
+            <th>Department</th>
+        </tr>
+    </tfoot>
+</table>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready( function () {
+    $('#majorTable').DataTable(); // Initialize the DataTable
+} );
+</script>
+{% endblock %}

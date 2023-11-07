@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Michael Hawk University{% endblock title %}</title>
+    <link href="{% static 'globals.css' %}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+
+    {% block head %}
+    {% endblock head %}
+    <style>
+      #toast-container {
+        position: fixed; /* Fixed position will make it stay in place even when scrolling */
+        top: 10; /* Align to the top */
+        right: 0;
+        left: 0;
+        z-index: 1050; /* Make sure it's above other content */
+      }
+
+      .toast {
+        width: 100%; /* Make toast stretch full width */
+        max-width: none; /* Override Bootstrap max-width for toasts */
+      }
+      .toast-error {
+        background-color: #dc3545; /* Bootstrap's danger color, or use any color you prefer */
+        color: white;
+      }
+      .toast-success {
+        background-color: #28a745; /* Bootstrap's success color, or use any color you prefer */
+        color: white;
+      }
+    </style>
+
+
+</head>
+<body style = 'background-color:var(--primary-color)'>
+
+<nav class="navbar navbar-expand-lg navbar-dark" style='background-color:var(--secondary-color); color:var(--primary-color)'>
+  <a class="navbar-brand" href="/homepage/" >Michael Hawk University</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Directory
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          <a class="dropdown-item" href="/faculty-directory/">Faculty Directory</a>
+          <a class="dropdown-item" href="/department-directory/">Department Directory</a>
+          <a class="dropdown-item" href="/major-directory/">Major Directory</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/schedule/">Schedule</a>
+      </li>
+      <li class="nav-item">
+        {% if usertype == "Student" %}
+            <a class="nav-link" href="/student/">Student View</a>
+        {% else %}
+            <a class="nav-link" href="/faculty/">Faculty View</a>
+        {% endif %}
+        <!-- Profile link is commented out -->
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/logout/">Logout</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+{% if messages %}
+  <div id="toast-container">
+    {% for message in messages %}
+        <div class="toast {% if 'Error' in message.tags %}toast-error{% elif 'Success' in message.tags %}toast-success{% endif %}" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true" data-delay="5000">
+            <div class="toast-header {% if 'Error' in message.tags %}toast-error{% elif 'Success' in message.tags %}toast-success{% endif %}">
+                <strong class="mr-auto">Notification</strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="toast-body">
+                {{ message }}
+            </div>
+        </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+<div class="container mt-5">
+    {% block content %}
+    <!-- This block will be overridden by each child template -->
+    {% endblock content %}
+</div>
+
+{% block script %}
+
+{% endblock script %}
+{% block style %}
+    {% comment %} include css link for https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css {% endcomment %}
+
+{% endblock style %}
+</body>
+<script>
+  {% if messages %}
+    {% for message in messages %}
+        $('.toast').toast('show');
+    {% endfor %}
+  {% endif %}
+</script>
+</html>

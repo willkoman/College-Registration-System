@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-#q89x6pm1zkj=eyv(n^8szc3$!$sz71l-h#dmp5o*0=5bx)vri
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1','michaelhawk.us.to','52.6.154.142']
 
 AUTH_USER_MODEL = 'registration.Login'
 
@@ -89,8 +89,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'registration',
         'USER': 'root',
-        'PASSWORD': 'zKF3@Ty!!',
-        'HOST': 'localhost',  # Set to the address of your MySQL instance
+        'PASSWORD': 'NGv^?NIYV##c5t7(T0&>xO:~kj0?Kaml',
+        'HOST':'ls-a972e725af84ed446a0800a3e8acb7e4e3c2606c.ch7qhb0nqyqi.us-east-1.rds.amazonaws.com',  # Set to the address of your MySQL instance
         'PORT': '3306',  # Default MySQL port
     }
 }

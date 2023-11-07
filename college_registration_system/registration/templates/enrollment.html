@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% block style %}
+<style>
+    /* DataTables */
+    #cont {
+        background-color: var(--secondary-color);
+        drop-shadow: 0px 0px 40px var(--accent-color);
+        border-radius: 20px;
+    }
+    #registeredSessionsTable_wrapper {
+        color: var(--black);
+    }
+    #registeredSessionsTable thead {
+        background-color: var(--secondary-color);
+        color: var(--white);
+    }
+    #registeredSessionsTable tbody tr:nth-child(odd) {
+        background-color: var(--accent-color);
+    }
+    #registeredSessionsTable tbody tr:nth-child(even) {
+        background-color: var(--secondary-accent-color);
+    }
+
+    @media print {
+        @page {
+          size: landscape;
+          margin: 10mm;
+        }
+        body * {
+          visibility: hidden;
+        }
+        #calendar, #calendar * {
+          visibility: visible;
+        }
+        #calendar {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+      }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1>Registered Sessions</h1>
+    <table id="registeredSessionsTable" class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>CRN</th>
+                <th>Course</th>
+                <th>Department</th>
+                <th>Semester</th>
+                <th>Timeslot</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for registration in enrollment %}
+                <tr>
+                    <td>{{ registration.section.crn }}</td>
+                    <td>{{ registration.section.course.course_name }}</td>
+                    <td>{{ registration.section.course.department }}</td>
+                    <td>{{ registration.section.semester }}</td>
+                    <td>{{ registration.section.timeslot }}</td>
+                    <td>
+                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmDropModal{{ registration.section.crn }}">
+                            Drop Course
+                        </button>
+                        <!-- Modal -->
+                        <div class="modal fade" id="confirmDropModal{{ registration.section.crn }}" tabindex="-1" role="dialog" aria-labelledby="confirmDropModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmDropModalLabel">Confirm Drop</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Are you sure you want to drop {{ registration.section.course.course_name }}?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <a href="/dropcourse/{{ registration.section.crn }}" class="btn btn-danger">Yes</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="container mt-5">
+    <h1>Course Schedule</h1>
+    <button id="printButton" class="btn btn-primary">Print Schedule</button>
+    <div id='calendar'></div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function() {
+    $('#registeredSessionsTable').DataTable();
+});
+// add FullCalendar
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'timeGridWeek,timeGridDay'
+        },
+        slotMinTime: '08:00:00',  // Calendar starts at 8:00 AM
+        slotMaxTime: '22:00:00',  // Calendar ends at 10:00 PM
+        allDaySlot: false,
+        events: [
+            {% for registration in enrollment %}
+            {
+                title: '{{ registration.section.course.course_name }}',
+                daysOfWeek: {{ registration.day_indices }},
+                startTime: '{{ registration.section.timeslot.periods.first.start_time|date:"H:i" }}', // 24-hour format
+                endTime: '{{ registration.section.timeslot.periods.first.end_time|date:"H:i" }}', // 24-hour format
+                allDay: false,
+                url: '/course/{{ registration.section.course.course_id }}'
+            },
+            {% endfor %}
+        ],
+    });
+    calendar.render();
+    document.getElementById('printButton').addEventListener('click', function() {
+        window.print();
+    });
+});
+</script>
+{% endblock %}

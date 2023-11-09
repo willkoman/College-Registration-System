@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from .models import CoursePrereq, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
 
-@login_required
+@login_required(login_url='login')
 def root_redirect(request):
     #if login that has that user is superuser, redirect to admin page
     if request.user.is_superuser:
@@ -55,7 +55,7 @@ def user_login(request):
                 pass
             error_message="Invalid login credentials."
     return render(request, 'login.html',{'error_message': error_message})
-@login_required
+@login_required(login_url='login')
 def homepage(request):
     user = request.user.user
     context = {
@@ -87,7 +87,7 @@ def homepage(request):
 def logout_view(request):
     logout(request)
     return redirect('/login/')
-@login_required
+@login_required(login_url='login')
 def schedule_view(request):
     user = request.user.user
     context = {
@@ -117,12 +117,12 @@ def schedule_view(request):
 
     context['sections']=formatted_sections
     return render(request, 'schedule.html', context)
-@login_required
+@login_required(login_url='login')
 def registered_sessions_view(request):
     student = request.user.student  # Assuming you have a ForeignKey from User to Student
     registered_sessions = Enrollment.objects.filter(student=student)
     return render(request, 'registered_sessions.html', {'registered_sessions': registered_sessions})
-@login_required
+@login_required(login_url='login')
 def course_history_view(request):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
@@ -131,7 +131,7 @@ def course_history_view(request):
     student = Student.objects.get(user=request.user.user)
     context['course_history'] = StudentHistory.objects.filter(student=student)
     return render(request, 'course_history.html',context)
-@login_required
+@login_required(login_url='login')
 def student_view(request):
     user = request.user.user
     context = {
@@ -160,7 +160,7 @@ def student_view(request):
 
         print("Faculty:", context['faculty'])
     return render(request, 'student_page.html', context)
-@login_required
+@login_required(login_url='login')
 def enrollment_view(request):
     student = request.user.user.student
     enrollments = Enrollment.objects.filter(student=student).select_related('section', 'section__course', 'section__timeslot').prefetch_related('section__timeslot__days')
@@ -189,7 +189,7 @@ def enrollment_view(request):
     }
 
     return render(request, 'enrollment.html', context)
-@login_required
+@login_required(login_url='login')
 def register(request, section_id):
     #distionary assigning number to grade
     grade_dict = {'A':4,'B':3,'C':2,'D':1,'F':0,'NA':0}
@@ -221,7 +221,7 @@ def register(request, section_id):
         # Add a failure message
         messages.error(request, f'An error occurred while registering for {section}.\n{e}',extra_tags='Error')
     return redirect('/schedule/')
-@login_required
+@login_required(login_url='login')
 def drop_course(request,section_id):
     try:
         student = request.user.user.student
@@ -235,7 +235,7 @@ def drop_course(request,section_id):
         # Add a failure message
         messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
     return redirect('/enrollment/')
-@login_required
+@login_required(login_url='login')
 def course_view(request,course_id):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
@@ -246,7 +246,7 @@ def course_view(request,course_id):
     prereqs = CoursePrereq.objects.filter(course=course)
     context['prereqs'] = prereqs
     return render(request, 'course.html', context)
-@login_required
+@login_required(login_url='login')
 def faculty_directory(request):
     # Retrieve all Faculty objects and their related Faculty_FullTime and Faculty_PartTime objects
     faculty = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime')
@@ -257,7 +257,7 @@ def faculty_directory(request):
         'faculty': faculty,
     }
     return render(request, 'faculty_directory.html', context)
-@login_required
+@login_required(login_url='login')
 def department_directory(request):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
@@ -265,7 +265,7 @@ def department_directory(request):
     }
     context['departments'] = Department.objects.all()
     return render(request, 'department_directory.html', context)
-@login_required
+@login_required(login_url='login')
 def major_directory(request):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
@@ -273,7 +273,7 @@ def major_directory(request):
     }
     context['majors'] = Major.objects.all().distinct()
     return render(request, 'major_directory.html', context)
-@login_required
+@login_required(login_url='login')
 def faculty_view(request,user_id):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,

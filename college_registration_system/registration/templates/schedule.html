@@ -21,12 +21,35 @@
         #scheduleTable tbody tr:nth-child(even) {
             background-color: var(--secondary-accent-color);
         }
+        .filter-container {
+            margin-bottom: 10px;
+            text-align: left; /* or center, based on your layout */
+
+        }
+        .filter-container select {
+            margin-right: 10px;
+        }
     </style>
 {% endblock %}
 {% block content %}
 <div id='cont' class="container mt-5 center-block text-center" >
     <h1 style="color:var(--accent-color)" >Master Schedule</h1>
     <table id="scheduleTable"  >
+        <div class="filter-container">
+            <select id="departmentFilter" class="form-select form-select-sm" aria-label=".form-select-sm example">
+                <option value="">Select Department</option>
+                {% for department in departments %}
+                <option value="{{ department }}">{{ department }}</option>
+                {% endfor %}
+            </select>
+            <select id="semesterFilter" class="form-select form-select-sm" aria-label=".form-select-sm example">
+                {% comment %} default option is first {% endcomment %}
+                <option value="">Select Semester</option>
+                {% for semester in semesters %}
+                <option value="{{ semester }}">{{ semester }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <thead>
             <tr>
                 <th>CRN</th>
@@ -46,7 +69,7 @@
             {% for section in sections %}
             <tr>
                 <td>{{ section.crn }}</td>
-                <td><a href="/course/{{ section.course.course_id }}">{{ section.course }}</a></td>
+                <td><a href="/course/{{ section.course.course_id }}" target="_blank">{{ section.course }}</a></td>
                 <td>{{ section.department}}</td>
                 <td>{{ section.credits }}</td>
                 <td>{{ section.faculty.user.first_name }} {{ section.faculty.user.last_name }}</td>
@@ -54,7 +77,7 @@
                 <td>{{ section.days }}:<br> {{ section.timeslot }}</td>
                 <td>{{ section.semester }}</td>
                 {% if usertype == "Student" %}
-                <td><a href="/register/{{ section.crn }}/" class="btn btn-primary">Register</a></td>
+                <td><a href="/register/{{ section.crn }}/" class="btn btn-primary" onClick="showLoadingModal('Registering...')">Register</a></td>
                 {% endif %}
             </tr>
             {% endfor %}
@@ -63,9 +86,36 @@
 </div>
 {% endblock %}
 {% block script %}
-    <script>
-        $(document).ready( function () {
-            $('#scheduleTable').DataTable();
-        } );
-    </script>
+<script>
+    $(document).ready( function () {
+        var table = $('#scheduleTable').DataTable();
+        $.fn.dataTable.ext.search.push(
+            function (settings, data, dataIndex) {
+                var selectedDepartment = $('#departmentFilter').val();
+                var selectedSemester = $('#semesterFilter').val();
+                var department = data[2]; // Assuming department is in the 3rd column
+                var semester = data[7]; // Assuming semester is in the 8th column
+
+                if ((selectedDepartment === "" || department === selectedDepartment) &&
+                    (selectedSemester === "" || semester === selectedSemester)) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        // Event listener for the filters
+        $('#departmentFilter, #semesterFilter').on('change', function () {
+            table.draw();
+        });
+        // first selected semester should be first in the list
+        $('#semesterFilter').val('{{ semesters.0 }}');
+        table.draw();
+    });
+
+    function showLoadingModal(text="Loading...") {
+        $('#loadingModal').show();
+        $('#loadingText').text(text);
+    }
+</script>
 {% endblock %}

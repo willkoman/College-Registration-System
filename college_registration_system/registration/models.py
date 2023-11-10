@@ -546,6 +546,20 @@ def create_student_history(sender, instance, created, **kwargs):
             semester=instance.section.semester
         ).update(grade=instance.grade)
 
+#when enrollment is deleted, delete student history but only if grade is NA
+@receiver(post_delete, sender=Enrollment)
+def delete_student_history(sender, instance, **kwargs):
+    sh = StudentHistory.objects.filter(
+        student=instance.student,
+        section=instance.section,
+        course=instance.section.course,
+        semester=instance.section.semester
+    )
+    if instance.grade == 'NA' or instance.grade == None:
+        sh.delete()
+    else:
+        return
+
 
 # StudentHistory Model
 class StudentHistory(models.Model):

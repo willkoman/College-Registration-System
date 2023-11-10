@@ -14,10 +14,19 @@
             {% endif %}
             {% if grad %}
                 <h3>You are a Graduate student</h3>
-            {% else %}
+                {% if grad.grad_student_type == "Fulltime" %}
+                    <h3>You are a Full-Time Graduate student</h3>
+                {% else %}
+                    <h3>You are a Part-Time Graduate student</h3>
+                {% endif %}
+            {% elif undergrad %}
                 <h3>You are an Undergraduate student</h3>
+                {% if undergrad.undergrad_student_type == "Fulltime" %}
+                    <h3>You are a Full-Time Undergraduate student</h3>
+                {% else %}
+                    <h3>You are a Part-Time Undergraduate student</h3>
+                {% endif %}
             {% endif %}
-
             <h2>Your Registered Sessions</h2>
             <ul>
                 {% for registration in enrollment %}

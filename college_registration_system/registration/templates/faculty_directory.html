@@ -15,7 +15,7 @@
     <tbody>
         {% for faculty_member in faculty %}
         <tr>
-            <td><a href="/faculty/{{faculty_member.user.id}}/">{{ faculty_member.user.first_name }} {{faculty_member.user.last_name}}</a></td>
+            <td><a href="/faculty/{{faculty_member.user.id}}/" target="_blank">{{ faculty_member.user.first_name }} {{faculty_member.user.last_name}}</a></td>
             <td>{{ faculty_member.get_rank_display }}</td>
             <td>{% for dept in faculty_member.departments.all %}
                 {{ dept.department_name }}{% if not forloop.last %},{% endif %}

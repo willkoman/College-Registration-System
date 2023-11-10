@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse
-from .models import CoursePrereq, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
+from .models import CoursePrereq, CourseSection,Department,Semester, Course,Login,Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
 
 @login_required(login_url='user_login')
@@ -115,6 +115,10 @@ def schedule_view(request):
             'faculty': section.faculty,
         })
 
+        context['departments'] = Department.objects.all()
+        #context['timeslots'] = Timeslot.objects.all()
+        context['semesters'] = Semester.objects.all()
+
     context['sections']=formatted_sections
     return render(request, 'schedule.html', context)
 @login_required(login_url='user_login')
@@ -188,11 +192,12 @@ def enrollment_view(request):
         'enrollment': enrollments,
     }
 
+
     return render(request, 'enrollment.html', context)
 @login_required(login_url='user_login')
 def register(request, section_id):
     #distionary assigning number to grade
-    grade_dict = {'A':4,'B':3,'C':2,'D':1,'F':0,'NA':0}
+    grade_dict = {'A':4,'A-':3.5,'B+':3.25,'B':3,'B-':2.75,'C+':2.25,'C':2,'C-':1.75,'D+':1.25,'D':1,'D-':0.75,'F':0,'NA':0}
     try:
         student = request.user.user.student
         section = CourseSection.objects.get(crn=section_id)
@@ -205,6 +210,12 @@ def register(request, section_id):
         #if same timeslot in coursesection already in enrollment, raise exception
         if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
             raise Exception("You have already registered for a course in this timeslot.")
+        #if student has completed course already with grade C or higher, raise exception
+        if Enrollment.objects.filter(student=student, section__course=section.course).exists():
+            raise Exception("You are already registered for this course.")
+        if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
+            if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
+                raise Exception("You have already completed this course.")
         if CoursePrereq.objects.filter(course=section.course).exists():
             prereqs = CoursePrereq.objects.filter(course=section.course)
             for prereq in prereqs:
@@ -212,7 +223,18 @@ def register(request, section_id):
                     raise Exception(f"You have not completed the prerequisite course: {prereq.pr_course}")
                 elif grade_dict[StudentHistory.objects.get(student=student, section__course=prereq.pr_course).grade] < grade_dict[prereq.min_grade]:
                     raise Exception(f"You have not achieved a high enough grade for: {prereq.pr_course}")
-
+        #if student has registered for more than 2 courses this semester, they are now a fulltime student
+        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() > 2:
+            if student.student_type == 'Undergraduate':
+                #get undergrad object and change to fulltime
+                undergrad = Undergraduate.objects.get(student=student)
+                undergrad.undergrad_student_type = 'Fulltime'
+                undergrad.save()
+            elif student.student_type == 'Graduate':
+                #get grad object and change to fulltime
+                grad = Graduate.objects.get(student=student)
+                grad.grad_student_type = 'Fulltime'
+                grad.save()
         enrollment.save()
         # Add a success message
         messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
@@ -230,6 +252,18 @@ def drop_course(request,section_id):
         enrollment.delete()
         # Add a success message
         messages.success(request, f'You have successfully dropped {section}!',extra_tags='Success')
+
+        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() <= 2:
+            if student.student_type == 'Undergraduate':
+                #get undergrad object and change to parttime
+                undergrad = Undergraduate.objects.get(student=student)
+                undergrad.undergrad_student_type = 'Parttime'
+                undergrad.save()
+            elif student.student_type == 'Graduate':
+                #get grad object and change to parttime
+                grad = Graduate.objects.get(student=student)
+                grad.grad_student_type = 'Parttime'
+                grad.save()
     except Exception as e:
         print("Exception:", e)
         # Add a failure message

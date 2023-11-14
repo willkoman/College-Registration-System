@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Academic Events (2023-2024)</h1>
+    <table id="eventsTable" class="display">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Event</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.date }}</td>
+                <td>{{ event.event }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function () {
+    $('#eventsTable').DataTable({
+        "order": [[0, "asc"]]
+    });
+});
+</script>
+{% endblock %}

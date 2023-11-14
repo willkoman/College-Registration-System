@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block style %}
+<style>
+    .fc-event-title, .fc-event-title-container {
+      white-space: normal !important;
+      overflow-wrap: break-word !important;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div id='calendar'></div>
+{% endblock %}
+
+{% block script %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: {{ events|safe }}
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

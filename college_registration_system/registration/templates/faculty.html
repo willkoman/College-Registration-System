@@ -6,7 +6,9 @@
     <h2>Faculty Details</h2>
     <p><strong>Name:</strong> {{ faculty.user.first_name }} {{faculty.user.last_name }}</p>
     <p><strong>Rank:</strong> {{ faculty.get_rank_display }}</p>
-    <p><strong>Department:</strong> {{ faculty.department }}</p>
+    <p><strong>Department(s):</strong> {% for dept in faculty.departments.all %}
+        {{ dept.department_name }}{% if not forloop.last %},{% endif %}
+      {% endfor %}</p>
     <p><strong>Specialty:</strong> {{ faculty.specialty }}</p>
     <p><strong>Type:</strong> {{ faculty.get_fac_type_display }}</p>
     <p><strong>Office:</strong> {{ office}}</p>

@@ -4,16 +4,27 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse
-from .models import CoursePrereq, CourseSection,Department,Semester, Course,Login,Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
+from .models import CoursePrereq, Semester,Hold, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
+import requests
+import json
 
-@login_required(login_url='user_login')
+
+add_drop_periods = Semester.objects.all().order_by('start_date')
+#add_drop periods end 2 weeks after the start date of the semester and start 4 weeks before the start date of the semester
+for period in add_drop_periods:
+    period.add_drop_end_date = period.start_date + datetime.timedelta(days=14)
+    period.add_drop_start_date = period.start_date - datetime.timedelta(days=28)
+    period.save()
+
+# @login_required(login_url='user_login')
 def root_redirect(request):
     #if login that has that user is superuser, redirect to admin page
-    if request.user.is_superuser:
-        return redirect('/admin/')
-    else:
-        return redirect('/homepage/')
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('/admin/')
+
+    return redirect('/homepage/')
 
 def user_login(request):
     error_message = ''
@@ -55,44 +66,75 @@ def user_login(request):
                 pass
             error_message="Invalid login credentials."
     return render(request, 'login.html',{'error_message': error_message})
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
 def homepage(request):
-    user = request.user.user
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-    }
-    if request.user.user.user_type == 'Student':
-        #get student with that user and append to context
-        context['student'] = Student.objects.get(user=user)
+    # Check if user is authenticated
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
 
-        try:
-            context['grad'] = Graduate.objects.get(student=context['student'])
-        except:
-            context['undergrad'] = Undergraduate.objects.get(student=context['student'])
-        print("Student:", context['student'])  # Debugging line
+        if usertype == 'Student':
+            # Get student with that user and append to context
+            student = Student.objects.get(user=user)
+            context = {
+                'username': username,
+                'usertype': usertype,
+                'student': student
+            }
 
+            try:
+                context['grad'] = Graduate.objects.get(student=student)
+            except Graduate.DoesNotExist:
+                context['undergrad'] = Undergraduate.objects.get(student=student)
+            print("Student:", student)  # Debugging line
 
-    elif request.user.user.user_type == 'Faculty':
-        #get faculty with that user and append to context
-        context['faculty'] = Faculty.objects.get(user=user)
-        try:
-            context['office'] = Faculty_FullTime.objects.get(faculty=context['faculty']).office
-        except:
-            context['office'] = Faculty_PartTime.objects.get(faculty=context['faculty']).office
+        elif usertype == 'Faculty':
+            # Get faculty with that user and append to context
+            faculty = Faculty.objects.get(user=user)
+            context = {
+                'username': username,
+                'usertype': usertype,
+                'faculty': faculty
+            }
 
-        print("Faculty:", context['faculty'])
+            try:
+                context['office'] = Faculty_FullTime.objects.get(faculty=faculty).office
+            except Faculty_FullTime.DoesNotExist:
+                context['office'] = Faculty_PartTime.objects.get(faculty=faculty).office
+            print("Faculty:", faculty)
+
+        else:
+            context = {
+                'username': username,
+                'usertype': usertype,
+            }
+
+    else:
+        context = {
+            'username': "Visitor",
+            'usertype': None,
+        }
+
     return render(request, 'homepage.html', context)
+
 
 def logout_view(request):
     logout(request)
-    return redirect('/login/')
-@login_required(login_url='user_login')
+    return redirect('/homepage/')
+# @login_required(login_url='user_login')
 def schedule_view(request):
-    user = request.user.user
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
     }
     course_sections = CourseSection.objects.all()
     formatted_sections = []
@@ -202,6 +244,9 @@ def register(request, section_id):
         student = request.user.user.student
         section = CourseSection.objects.get(crn=section_id)
         enrollment = Enrollment(student=student, section=section, date_of_enrollment=datetime.date.today(), grade='NA')
+
+        '''All the checks for registration'''
+
         # if enrollment already exists with the student and same section, raise an exception
         if Enrollment.objects.filter(student=student, section=section).exists():
             raise Exception("You have already registered for this section.")
@@ -223,18 +268,20 @@ def register(request, section_id):
                     raise Exception(f"You have not completed the prerequisite course: {prereq.pr_course}")
                 elif grade_dict[StudentHistory.objects.get(student=student, section__course=prereq.pr_course).grade] < grade_dict[prereq.min_grade]:
                     raise Exception(f"You have not achieved a high enough grade for: {prereq.pr_course}")
-        #if student has registered for more than 2 courses this semester, they are now a fulltime student
-        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() > 2:
-            if student.student_type == 'Undergraduate':
-                #get undergrad object and change to fulltime
-                undergrad = Undergraduate.objects.get(student=student)
-                undergrad.undergrad_student_type = 'Fulltime'
-                undergrad.save()
-            elif student.student_type == 'Graduate':
-                #get grad object and change to fulltime
-                grad = Graduate.objects.get(student=student)
-                grad.grad_student_type = 'Fulltime'
-                grad.save()
+        if Hold.objects.filter(student=student).exists():
+            holdTypes = Hold.objects.filter(student=student)
+            #get unique hold types
+            holdTypes = set([hold.hold_type for hold in holdTypes])
+            holdTypes_str = ', '.join(holdTypes)
+            raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
+        #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
+        #TODO: UNCOMMENT WHEN NO LONGER TESTING
+        semes = section.semester
+        semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
+        if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
+            raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+
+        '''All checks passed, save enrollment'''
         enrollment.save()
         # Add a success message
         messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
@@ -269,49 +316,88 @@ def drop_course(request,section_id):
         # Add a failure message
         messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
     return redirect('/enrollment/')
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
 def course_view(request,course_id):
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
     }
     course = Course.objects.get(course_id=course_id)
     context['course'] = course
     prereqs = CoursePrereq.objects.filter(course=course)
     context['prereqs'] = prereqs
     return render(request, 'course.html', context)
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
 def faculty_directory(request):
     # Retrieve all Faculty objects and their related Faculty_FullTime and Faculty_PartTime objects
     faculty = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime')
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
 
     context = {
-        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
         'faculty': faculty,
     }
     return render(request, 'faculty_directory.html', context)
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
 def department_directory(request):
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
     }
     context['departments'] = Department.objects.all()
     return render(request, 'department_directory.html', context)
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
 def major_directory(request):
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
     }
     context['majors'] = Major.objects.all().distinct()
     return render(request, 'major_directory.html', context)
-@login_required(login_url='user_login')
-def faculty_view(request,user_id):
+# @login_required(login_url='user_login')
+def faculty(request,user_id):
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
+        'username': username,
+        'usertype': usertype,
     }
     faculty = Faculty.objects.get(user=user_id)
     context['faculty'] = faculty
@@ -320,3 +406,89 @@ def faculty_view(request,user_id):
     except:
         context['office'] = Faculty_PartTime.objects.get(faculty=faculty).office
     return render(request, 'faculty.html', context)
+@login_required(login_url='user_login')
+def faculty_view(request):
+    fac = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime').filter(user=request.user.user)[0]
+
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'faculty': fac,
+    }
+    context['courses'] = CourseSection.objects.filter(faculty=fac)
+    return render(request, 'faculty_view.html', context)
+
+
+def get_holidays():
+    api_key = "97NRjkRbLcWFblKOSf1zUdcJcDa5hYRh"
+    country = "US"
+    state = "NY"  # New York state code
+    years = [2023, 2024]
+    types = ["national", "local"]
+
+    formatted_holidays = []
+    unique_dates = set()
+
+    for year in years:
+        for holiday_type in types:
+            url = f"https://calendarific.com/api/v2/holidays?api_key={api_key}&country={country}&year={year}&type={holiday_type}&location={state}"
+            response = requests.get(url)
+            holidays = response.json()
+            if holiday_type == 'local':
+                color= 'red'
+            elif holiday_type == 'national':
+                color= 'teal'
+            else:
+                color= 'gray'
+            for holiday in holidays['response']['holidays']:
+                date = holiday['date']['iso']
+                if date not in unique_dates:
+                    formatted_holidays.append({
+                        'title': holiday['name'],
+                        'start': date,
+                        'color': color,
+                    })
+                    unique_dates.add(date)
+
+    return formatted_holidays
+
+
+def calendar_view(request):
+    holidays = get_holidays()
+    events = [
+        {'title': 'Add Drop Starts For Fall 2023', 'start': str(add_drop_periods[0].add_drop_start_date)},
+        {'title': 'Add Drop Ends For Fall 2023', 'start': str(add_drop_periods[0].add_drop_end_date)},
+        {'title': 'Add Drop Starts For Spring 2024', 'start': str(add_drop_periods[1].add_drop_start_date)},
+        {'title': 'Add Drop Ends for Spring 2024', 'start': str(add_drop_periods[1].add_drop_end_date)},
+    ]
+    for event in events:
+        event['color'] = 'purple'
+    combined_events = holidays + events  # Combine holidays and events
+
+    context = {
+        'events': json.dumps(combined_events)  # Convert to JSON
+    }
+    return render(request, 'calendar.html', context)
+
+def events_view(request):
+    # Example data - mock events
+    events = [
+        {"date": "2023-09-01", "event": "Fall Semester Begins"},
+        {"date": str(add_drop_periods[0].add_drop_start_date), "event": "Fall Add/Drop Period Begins"},
+        {"date": str(add_drop_periods[0].add_drop_end_date), "event": "Fall Add/Drop Period Ends"},
+        {"date": str(add_drop_periods[1].add_drop_start_date), "event": "Spring Add/Drop Period Ends"},
+        {"date": str(add_drop_periods[1].add_drop_end_date), "event": "Spring Add/Drop Period Ends"},
+        {"date": "2023-09-05", "event": "Labor Day - No Classes"},
+        {"date": "2023-10-15", "event": "Midterm Exams Week"},
+        {"date": "2023-11-24", "event": "Thanksgiving Break"},
+        {"date": "2023-12-08", "event": "Final Exams Week"},
+        {"date": "2023-12-15", "event": "Fall Semester Ends"},
+        {"date": "2024-01-10", "event": "Spring Semester Begins"},
+        {"date": "2024-03-01", "event": "Spring Break"},
+        {"date": "2024-05-15", "event": "Final Exams Week"},
+        {"date": "2024-05-30", "event": "Commencement Ceremony"}
+    ]
+    context = {
+        'events': events
+    }
+    return render(request, 'events.html', context)

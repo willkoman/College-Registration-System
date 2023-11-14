@@ -23,7 +23,7 @@
             <td>{{ faculty_member.specialty }}</td>
             <td>{{ faculty_member.get_fac_type_display }}</td>
             <td>
-                {% if faculty_member.fac_type == 'FT' %}
+                {% if faculty_member.fac_type == 'FullTime' %}
                     {{ faculty_member.faculty_fulltime.office }}
                 {% else %}
                     {{ faculty_member.faculty_parttime.office }}

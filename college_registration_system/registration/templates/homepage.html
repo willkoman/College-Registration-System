@@ -1,32 +1,61 @@
 {% extends "base.html" %}
 {% load static %}
+{% block style %}
+<style>
+    .large-button {
+        padding: 40px 0; /* Increase top and bottom padding */
+        font-size: 1.5em; /* Optional: Increase font size for better visibility */
+    }
+</style>
+{% endblock %}
 {% block content %}
 
 <div class="container mt-5 center-block text-center" >
     <h1 style='color:var(--accent-color)'>Welcome to Michael Hawk University, {{ username }}!</h1>
-    <h2 style='color:var(--accent-color)'>You are a: {{usertype}} </h2>
-    {% if usertype == "Student" %}
-        <h3 style='color:var(--accent-color)'>Your Student ID is: {{ student.studentID }}</h3>
-        <h3 style='color:var(--accent-color)'>Your Major is: {{ student.major_id }}</h3>
-        {% if student.minor_id is not Null  %}
-            <h3 style='color:var(--accent-color)'>Your Minor is: {{ student.minor_id }}</h3>
-        {% endif %}
-        {% if grad is not Null %}
-            <h3 style='color:var(--accent-color)'>You are a Graduate student</h3>
-        {% else %}
-            <h3 style='color:var(--accent-color)'>You are an Undergraduate student</h3>
-        {% endif %}
+    {% if usertype != None %}
+        <h2 style='color:var(--accent-color)'>You are a {{usertype|lower}} </h2>
+        {% if usertype == "Student" %}
+            <h3 style='color:var(--accent-color)'>Your Student ID is: {{ student.studentID }}</h3>
+            <h3 style='color:var(--accent-color)'>Your Major is: {{ student.major_id }}</h3>
+            {% if student.minor_id is not Null  %}
+                <h3 style='color:var(--accent-color)'>Your Minor is: {{ student.minor_id }}</h3>
+            {% endif %}
+            {% if grad is not Null %}
+                <h3 style='color:var(--accent-color)'>You are a Graduate student</h3>
+            {% else %}
+                <h3 style='color:var(--accent-color)'>You are an Undergraduate student</h3>
+            {% endif %}
 
-    {% elif usertype == "Faculty" %}
-            <h3 style='color:var(--accent-color)'>Your Department is: {{ faculty.department }}</h3>
-            <h3 style='color:var(--accent-color)'>Your Role is: {{ faculty.rank }}</h3>
-            <h3 style='color:var(--accent-color)'>Your Office is: {{ office }}</h3>
-        {% if faculty.fac_type == "FT" %}
-            <h3 style='color:var(--accent-color)'>You are a Full-Time faculty</h3>
-        {% else %}
-            <h3 style='color:var(--accent-color)'>You are a Part-Time faculty</h3>
+        {% elif usertype == "Faculty" %}
+                <h3 style='color:var(--accent-color)'>Your Department(s): {% for dept in faculty.departments.all %}<i>{{ dept.department_name }}</i>{% if not forloop.last %}, {% endif %}{% endfor %}</h3>
+                <h3 style='color:var(--accent-color)'>Your Role is: {{ faculty.rank }}</h3>
+                <h3 style='color:var(--accent-color)'>Your Office is: {{ office }}</h3>
+            {% if faculty.fac_type == "FullTime" %}
+                <h3 style='color:var(--accent-color)'>You are a Full-Time faculty</h3>
+            {% else %}
+                <h3 style='color:var(--accent-color)'>You are a Part-Time faculty</h3>
+            {% endif %}
         {% endif %}
+    {% else %}
+        <h2 style='color:var(--accent-color)'>You are not a student or faculty</h2>
+        <h2 style='color:var(--accent-color)'>Feel free to browse our schedule and directory</h2>
     {% endif %}
-</div>
+    <div class="row mt-4">
+        <div class="col-md-6 mb-3">
+            <a href="/calendar/" class="btn btn-primary btn-block btn-lg large-button" onclick="showLoadingModal()">Academic Calendar</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="/schedule/" class="btn btn-secondary btn-block btn-lg large-button" onclick="showLoadingModal()">Master Schedule</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="/events/" class="btn btn-success btn-block btn-lg large-button" onclick="showLoadingModal()">Events</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="#" class="btn btn-info btn-block btn-lg large-button disabled" onclick="showLoadingModal()"> TODO </a>
+        </div>
+        <!-- Add more button columns as needed -->
+    </div>
 
+{% comment %} All common links and elements go here {% endcomment %}
+</div>
   {% endblock %}

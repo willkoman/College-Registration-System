@@ -305,21 +305,21 @@ def create_or_update_grad_subtype(sender, instance, **kwargs):
 class Faculty(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     RANK_CHOICES = [
-        ('Prof', 'Professor'),
-        ('AsstProf', 'Assistant Professor'),
-        ('Adjunct', 'Adjunct'),
-        ('TA', 'Teaching Assistant'),
+        ('Professor', 'Professor'),
+        ('Assistant Professor', 'Assistant Professor'),
+        ('Adjunct Professor', 'Adjunct'),
+        ('Teaching Assistant', 'Teaching Assistant'),
         # Add other ranks as needed
     ]
-    rank = models.CharField(max_length=8, choices=RANK_CHOICES)
+    rank = models.CharField(max_length=24, choices=RANK_CHOICES)
     #can be multiple departments. Should be a foreign key list
     departments = models.ManyToManyField('Department')
     specialty = models.CharField(max_length=50)
     FAC_TYPE_CHOICES = [
-        ('FT', 'Full-Time'),
-        ('PT', 'Part-Time'),
+        ('FullTime', 'Full-Time'),
+        ('PartTime', 'Part-Time'),
     ]
-    fac_type = models.CharField(max_length=2, choices=FAC_TYPE_CHOICES)
+    fac_type = models.CharField(max_length=8, choices=FAC_TYPE_CHOICES)
 
     def __str__(self):
         return self.rank +' '+self.user.first_name + ' ' + self.user.last_name
@@ -345,10 +345,10 @@ class Faculty_PartTime(models.Model):
 def create_or_update_faculty_subtype(sender, instance, **kwargs):
     fac_type = instance.fac_type
 
-    if fac_type == 'FT':
+    if fac_type == 'FullTime':
         Faculty_FullTime.objects.get_or_create(faculty=instance)
         Faculty_PartTime.objects.filter(faculty=instance).delete()
-    elif fac_type == 'PT':
+    elif fac_type == 'PartTime':
         Faculty_PartTime.objects.get_or_create(faculty=instance)
         Faculty_FullTime.objects.filter(faculty=instance).delete()
 
@@ -458,11 +458,10 @@ def create_faculty_history(sender, instance, created, **kwargs):
         FacultyHistory.objects.create(
             faculty=instance.faculty,
             section=instance,
-            course=instance.course,
             semester=instance.semester
         )
         #find faculty and update num_of_courses
-        if instance.faculty.fac_type == 'FT':
+        if instance.faculty.fac_type == 'FullTime':
             Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
         else:
             Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
@@ -470,11 +469,10 @@ def create_faculty_history(sender, instance, created, **kwargs):
         FacultyHistory.objects.filter(
             faculty=instance.faculty,
             section=instance,
-            course=instance.course,
             semester=instance.semester
         ).update()
 
-        if instance.faculty.fac_type == 'FT':
+        if instance.faculty.fac_type == 'FullTime':
             Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
         else:
             Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
@@ -484,12 +482,11 @@ def delete_faculty_history(sender, instance, **kwargs):
     fh = FacultyHistory.objects.filter(
         faculty=instance.faculty,
         section=instance,
-        course=instance.course,
         semester=instance.semester
     )
     fh.delete()
 
-    if instance.faculty.fac_type == 'FT':
+    if instance.faculty.fac_type == 'FullTime':
         Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
     else:
         Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
@@ -585,7 +582,6 @@ def delete_student_history(sender, instance, **kwargs):
 class FacultyHistory(models.Model):
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
     section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
 
     def __str__(self):

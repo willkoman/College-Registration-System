@@ -34,6 +34,13 @@
 {% block content %}
 <div id='cont' class="container mt-5 center-block text-center" >
     <h1 style="color:var(--accent-color)" >Master Schedule</h1>
+    <div class="mb-3">
+        <label for="semesterSelect" class="form-label">Select Semester:</label>
+        <select class="form-select" id="semesterSelect">
+            <option value="Fall 2023" selected>Fall 2023</option>
+            <option value="Spring 2024">Spring 2024</option>
+        </select>
+    </div>
     <table id="scheduleTable"  >
         <div class="filter-container">
             <select id="departmentFilter" class="form-select form-select-sm" aria-label=".form-select-sm example">
@@ -70,9 +77,10 @@
             <tr>
                 <td>{{ section.crn }}</td>
                 <td><a href="/course/{{ section.course.course_id }}" target="_blank">{{ section.course }}</a></td>
+                <td><a href="/course/{{ section.course.course_id }}" target="_blank">{{ section.course }}</a></td>
                 <td>{{ section.department}}</td>
                 <td>{{ section.credits }}</td>
-                <td>{{ section.faculty.user.first_name }} {{ section.faculty.user.last_name }}</td>
+                <td><a href="/faculty/{{section.faculty.user.id}}/" target="_blank">{{ section.faculty.user.first_name }} {{ section.faculty.user.last_name }}</a></td>
                 <td>{{section.room}}</td>
                 <td>{{ section.days }}:<br> {{ section.timeslot }}</td>
                 <td>{{ section.semester }}</td>
@@ -86,36 +94,18 @@
 </div>
 {% endblock %}
 {% block script %}
-<script>
-    $(document).ready( function () {
-        var table = $('#scheduleTable').DataTable();
-        $.fn.dataTable.ext.search.push(
-            function (settings, data, dataIndex) {
-                var selectedDepartment = $('#departmentFilter').val();
-                var selectedSemester = $('#semesterFilter').val();
-                var department = data[2]; // Assuming department is in the 3rd column
-                var semester = data[7]; // Assuming semester is in the 8th column
+    <script>
+        $(document).ready( function () {
+            $('#scheduleTable').DataTable(
 
-                if ((selectedDepartment === "" || department === selectedDepartment) &&
-                    (selectedSemester === "" || semester === selectedSemester)) {
-                    return true;
-                }
-                return false;
-            }
-        );
+            );
+            $('#scheduleTable').DataTable().column(7).search("Fall 2023").draw();
+        } );
 
-        // Event listener for the filters
-        $('#departmentFilter, #semesterFilter').on('change', function () {
-            table.draw();
+        $('#semesterSelect').on('change', function () {
+            var selectedSemester = $(this).val();
+            //filter the datatable to that semester
+            $('#scheduleTable').DataTable().column(7).search(selectedSemester).draw();
         });
-        // first selected semester should be first in the list
-        $('#semesterFilter').val('{{ semesters.0 }}');
-        table.draw();
-    });
-
-    function showLoadingModal(text="Loading...") {
-        $('#loadingModal').show();
-        $('#loadingText').text(text);
-    }
-</script>
+    </script>
 {% endblock %}

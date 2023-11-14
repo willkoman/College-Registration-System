@@ -16,13 +16,13 @@ for period in add_drop_periods:
     period.add_drop_end_date = period.start_date + datetime.timedelta(days=14)
     period.add_drop_start_date = period.start_date - datetime.timedelta(days=28)
     period.save()
-
+#region core
 # @login_required(login_url='user_login')
 def root_redirect(request):
     #if login that has that user is superuser, redirect to admin page
-    if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect('/admin/')
+    # if request.user.is_authenticated:
+    #     if request.user.is_superuser:
+    #         return redirect('/admin/')
 
     return redirect('/homepage/')
 
@@ -42,12 +42,13 @@ def user_login(request):
             try:
                 print("User Type:", userlogin.user.user_type)  # Debugging line
                 if userlogin.user.user_type == 'Admin':
-                    return redirect('/admin/')
+                    # return redirect('/admin/')
+                    pass
                 elif userlogin.user.user_type in ['Faculty', 'Student']:
                     if userlogin.is_locked:
                         error_message = "Your account is locked. Please contact the system administrator."
                         return render(request, 'login.html',{'error_message': error_message})
-                    return redirect('/homepage/')
+                return redirect('/homepage/')
             except Exception as e:
                 print("Exception:", e)  # Debugging line
                 error_message="Error: User type not recognized."
@@ -66,6 +67,7 @@ def user_login(request):
                 pass
             error_message="Invalid login credentials."
     return render(request, 'login.html',{'error_message': error_message})
+
 # @login_required(login_url='user_login')
 def homepage(request):
     # Check if user is authenticated
@@ -122,6 +124,7 @@ def homepage(request):
 def logout_view(request):
     logout(request)
     return redirect('/homepage/')
+
 # @login_required(login_url='user_login')
 def schedule_view(request):
     if request.user.is_authenticated:
@@ -163,13 +166,21 @@ def schedule_view(request):
 
     context['sections']=formatted_sections
     return render(request, 'schedule.html', context)
+#endregion
 @login_required(login_url='user_login')
 def registered_sessions_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     student = request.user.student  # Assuming you have a ForeignKey from User to Student
     registered_sessions = Enrollment.objects.filter(student=student)
     return render(request, 'registered_sessions.html', {'registered_sessions': registered_sessions})
+
 @login_required(login_url='user_login')
 def course_history_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
         'usertype': request.user.user.user_type,
@@ -177,8 +188,29 @@ def course_history_view(request):
     student = Student.objects.get(user=request.user.user)
     context['course_history'] = StudentHistory.objects.filter(student=student)
     return render(request, 'course_history.html',context)
+
+
+@login_required(login_url='user_login')
+def faculty_view(request):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    fac = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime').filter(user=request.user.user)[0]
+
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'faculty': fac,
+    }
+    context['courses'] = CourseSection.objects.filter(faculty=fac)
+    return render(request, 'faculty_view.html', context)
+
+
 @login_required(login_url='user_login')
 def student_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     user = request.user.user
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
@@ -206,8 +238,25 @@ def student_view(request):
 
         print("Faculty:", context['faculty'])
     return render(request, 'student_page.html', context)
+
+@login_required(login_url='user_login')
+def admin_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'admin': Admin.objects.get(user=request.user.user),
+    }
+    #get admin_view.html from templates/admin
+    return render(request, 'admin/admin_view.html', context)
+
 @login_required(login_url='user_login')
 def enrollment_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     student = request.user.user.student
     enrollments = Enrollment.objects.filter(student=student).select_related('section', 'section__course', 'section__timeslot').prefetch_related('section__timeslot__days')
 
@@ -236,86 +285,7 @@ def enrollment_view(request):
 
 
     return render(request, 'enrollment.html', context)
-@login_required(login_url='user_login')
-def register(request, section_id):
-    #distionary assigning number to grade
-    grade_dict = {'A':4,'A-':3.5,'B+':3.25,'B':3,'B-':2.75,'C+':2.25,'C':2,'C-':1.75,'D+':1.25,'D':1,'D-':0.75,'F':0,'NA':0}
-    try:
-        student = request.user.user.student
-        section = CourseSection.objects.get(crn=section_id)
-        enrollment = Enrollment(student=student, section=section, date_of_enrollment=datetime.date.today(), grade='NA')
 
-        '''All the checks for registration'''
-
-        # if enrollment already exists with the student and same section, raise an exception
-        if Enrollment.objects.filter(student=student, section=section).exists():
-            raise Exception("You have already registered for this section.")
-        if Enrollment.objects.filter(student=student).count() >= 4:
-            raise Exception("You have already registered for 4 courses in this semester.")
-        #if same timeslot in coursesection already in enrollment, raise exception
-        if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
-            raise Exception("You have already registered for a course in this timeslot.")
-        #if student has completed course already with grade C or higher, raise exception
-        if Enrollment.objects.filter(student=student, section__course=section.course).exists():
-            raise Exception("You are already registered for this course.")
-        if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
-            if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
-                raise Exception("You have already completed this course.")
-        if CoursePrereq.objects.filter(course=section.course).exists():
-            prereqs = CoursePrereq.objects.filter(course=section.course)
-            for prereq in prereqs:
-                if not StudentHistory.objects.filter(student=student, section__course=prereq.pr_course).exists():
-                    raise Exception(f"You have not completed the prerequisite course: {prereq.pr_course}")
-                elif grade_dict[StudentHistory.objects.get(student=student, section__course=prereq.pr_course).grade] < grade_dict[prereq.min_grade]:
-                    raise Exception(f"You have not achieved a high enough grade for: {prereq.pr_course}")
-        if Hold.objects.filter(student=student).exists():
-            holdTypes = Hold.objects.filter(student=student)
-            #get unique hold types
-            holdTypes = set([hold.hold_type for hold in holdTypes])
-            holdTypes_str = ', '.join(holdTypes)
-            raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
-        #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
-        #TODO: UNCOMMENT WHEN NO LONGER TESTING
-        # semes = section.semester
-        # semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
-        # if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
-        #     raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
-
-        '''All checks passed, save enrollment'''
-        enrollment.save()
-        # Add a success message
-        messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
-    except Exception as e:
-        print("Exception:", e)
-        # Add a failure message
-        messages.error(request, f'An error occurred while registering for {section}.\n{e}',extra_tags='Error')
-    return redirect('/schedule/')
-@login_required(login_url='user_login')
-def drop_course(request,section_id):
-    try:
-        student = request.user.user.student
-        section = CourseSection.objects.get(crn=section_id)
-        enrollment = Enrollment.objects.get(student=student, section=section)
-        enrollment.delete()
-        # Add a success message
-        messages.success(request, f'You have successfully dropped {section}!',extra_tags='Success')
-
-        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() <= 2:
-            if student.student_type == 'Undergraduate':
-                #get undergrad object and change to parttime
-                undergrad = Undergraduate.objects.get(student=student)
-                undergrad.undergrad_student_type = 'Parttime'
-                undergrad.save()
-            elif student.student_type == 'Graduate':
-                #get grad object and change to parttime
-                grad = Graduate.objects.get(student=student)
-                grad.grad_student_type = 'Parttime'
-                grad.save()
-    except Exception as e:
-        print("Exception:", e)
-        # Add a failure message
-        messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
-    return redirect('/enrollment/')
 # @login_required(login_url='user_login')
 def course_view(request,course_id):
     if request.user.is_authenticated:
@@ -385,6 +355,7 @@ def major_directory(request):
     }
     context['majors'] = Major.objects.all().distinct()
     return render(request, 'major_directory.html', context)
+
 # @login_required(login_url='user_login')
 def faculty(request,user_id):
     if request.user.is_authenticated:
@@ -406,18 +377,6 @@ def faculty(request,user_id):
     except:
         context['office'] = Faculty_PartTime.objects.get(faculty=faculty).office
     return render(request, 'faculty.html', context)
-@login_required(login_url='user_login')
-def faculty_view(request):
-    fac = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime').filter(user=request.user.user)[0]
-
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-        'faculty': fac,
-    }
-    context['courses'] = CourseSection.objects.filter(faculty=fac)
-    return render(request, 'faculty_view.html', context)
-
 
 def get_holidays():
     api_key = "97NRjkRbLcWFblKOSf1zUdcJcDa5hYRh"
@@ -492,3 +451,92 @@ def events_view(request):
         'events': events
     }
     return render(request, 'events.html', context)
+
+
+@login_required(login_url='user_login')
+def register(request, section_id):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/schedule/')
+    #distionary assigning number to grade
+    grade_dict = {'A':4,'A-':3.5,'B+':3.25,'B':3,'B-':2.75,'C+':2.25,'C':2,'C-':1.75,'D+':1.25,'D':1,'D-':0.75,'F':0,'NA':0}
+    try:
+        student = request.user.user.student
+        section = CourseSection.objects.get(crn=section_id)
+        enrollment = Enrollment(student=student, section=section, date_of_enrollment=datetime.date.today(), grade='NA')
+
+        '''All the checks for registration'''
+
+        # if enrollment already exists with the student and same section, raise an exception
+        if Enrollment.objects.filter(student=student, section=section).exists():
+            raise Exception("You have already registered for this section.")
+        if Enrollment.objects.filter(student=student).count() >= 4:
+            raise Exception("You have already registered for 4 courses in this semester.")
+        #if same timeslot in coursesection already in enrollment, raise exception
+        if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
+            raise Exception("You have already registered for a course in this timeslot.")
+        #if student has completed course already with grade C or higher, raise exception
+        if Enrollment.objects.filter(student=student, section__course=section.course).exists():
+            raise Exception("You are already registered for this course.")
+        if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
+            if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
+                raise Exception("You have already completed this course.")
+        if CoursePrereq.objects.filter(course=section.course).exists():
+            prereqs = CoursePrereq.objects.filter(course=section.course)
+            for prereq in prereqs:
+                if not StudentHistory.objects.filter(student=student, section__course=prereq.pr_course).exists():
+                    raise Exception(f"You have not completed the prerequisite course: {prereq.pr_course}")
+                elif grade_dict[StudentHistory.objects.get(student=student, section__course=prereq.pr_course).grade] < grade_dict[prereq.min_grade]:
+                    raise Exception(f"You have not achieved a high enough grade for: {prereq.pr_course}")
+        if Hold.objects.filter(student=student).exists():
+            holdTypes = Hold.objects.filter(student=student)
+            #get unique hold types
+            holdTypes = set([hold.hold_type for hold in holdTypes])
+            holdTypes_str = ', '.join(holdTypes)
+            raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
+        #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
+        #TODO: UNCOMMENT WHEN NO LONGER TESTING
+        # semes = section.semester
+        # semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
+        # if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
+        #     raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+
+        '''All checks passed, save enrollment'''
+        enrollment.save()
+        # Add a success message
+        messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
+    except Exception as e:
+        print("Exception:", e)
+        # Add a failure message
+        messages.error(request, f'An error occurred while registering for {section}.\n{e}',extra_tags='Error')
+    return redirect('/schedule/')
+
+@login_required(login_url='user_login')
+def drop_course(request,section_id):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/enrollment/')
+    try:
+        student = request.user.user.student
+        section = CourseSection.objects.get(crn=section_id)
+        enrollment = Enrollment.objects.get(student=student, section=section)
+        enrollment.delete()
+        # Add a success message
+        messages.success(request, f'You have successfully dropped {section}!',extra_tags='Success')
+
+        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() <= 2:
+            if student.student_type == 'Undergraduate':
+                #get undergrad object and change to parttime
+                undergrad = Undergraduate.objects.get(student=student)
+                undergrad.undergrad_student_type = 'Parttime'
+                undergrad.save()
+            elif student.student_type == 'Graduate':
+                #get grad object and change to parttime
+                grad = Graduate.objects.get(student=student)
+                grad.grad_student_type = 'Parttime'
+                grad.save()
+    except Exception as e:
+        print("Exception:", e)
+        # Add a failure message
+        messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
+    return redirect('/enrollment/')

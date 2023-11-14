@@ -32,7 +32,8 @@ urlpatterns = [
     path('admin/logout/', views.logout_view, name='logout'),
     path('homepage/', views.homepage, name='homepage'),
     path('logout/', views.logout_view, name='logout'),
-    path('admin/', admin.site.urls),
+    path('admin_panel/', admin.site.urls),
+    path('admin/', views.admin_view, name='admin_view'),
     path('schedule/', views.schedule_view, name='schedule_view'),
     path('registered-sessions/', views.registered_sessions_view, name='registered_sessions'),
     path('course-history/', views.course_history_view, name='course_history'),
@@ -48,4 +49,5 @@ urlpatterns = [
     path('faculty/', views.faculty_view, name='faculty_view'),
     path('calendar/', views.calendar_view, name='calendar_view'),
     path('events/', views.events_view, name='events_view'),
+
 ]

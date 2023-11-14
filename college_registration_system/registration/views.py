@@ -565,6 +565,8 @@ def admin_users_view(request, user_id=None):
             return redirect('admin_users_view')
 
     context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
         'form': form,
         'users': User.objects.all().select_related('student', 'faculty', 'admin', 'login'),
         'holds': Hold.objects.all(),

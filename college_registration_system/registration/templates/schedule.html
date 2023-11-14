@@ -42,21 +42,6 @@
         </select>
     </div>
     <table id="scheduleTable"  >
-        <div class="filter-container">
-            <select id="departmentFilter" class="form-select form-select-sm" aria-label=".form-select-sm example">
-                <option value="">Select Department</option>
-                {% for department in departments %}
-                <option value="{{ department }}">{{ department }}</option>
-                {% endfor %}
-            </select>
-            <select id="semesterFilter" class="form-select form-select-sm" aria-label=".form-select-sm example">
-                {% comment %} default option is first {% endcomment %}
-                <option value="">Select Semester</option>
-                {% for semester in semesters %}
-                <option value="{{ semester }}">{{ semester }}</option>
-                {% endfor %}
-            </select>
-        </div>
         <thead>
             <tr>
                 <th>CRN</th>
@@ -76,7 +61,6 @@
             {% for section in sections %}
             <tr>
                 <td>{{ section.crn }}</td>
-                <td><a href="/course/{{ section.course.course_id }}" target="_blank">{{ section.course }}</a></td>
                 <td><a href="/course/{{ section.course.course_id }}" target="_blank">{{ section.course }}</a></td>
                 <td>{{ section.department}}</td>
                 <td>{{ section.credits }}</td>

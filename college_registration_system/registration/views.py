@@ -276,10 +276,10 @@ def register(request, section_id):
             raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
         #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
         #TODO: UNCOMMENT WHEN NO LONGER TESTING
-        semes = section.semester
-        semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
-        if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
-            raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+        # semes = section.semester
+        # semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
+        # if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
+        #     raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
 
         '''All checks passed, save enrollment'''
         enrollment.save()

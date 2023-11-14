@@ -29,7 +29,9 @@
 {% block script %}
 <script>
   $(document).ready(function() {
-    $('#departmentTable').DataTable();
+    $('#departmentTable').DataTable(
+      {responsive: true}
+    );
   } );
 </script>
 {% endblock %}

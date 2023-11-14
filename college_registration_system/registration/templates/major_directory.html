@@ -30,7 +30,9 @@
 {% block script %}
 <script>
 $(document).ready( function () {
-    $('#majorTable').DataTable(); // Initialize the DataTable
+    $('#majorTable').DataTable(
+        {responsive: true}
+    ); // Initialize the DataTable
 } );
 </script>
 {% endblock %}

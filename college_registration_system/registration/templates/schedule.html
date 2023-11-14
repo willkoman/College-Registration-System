@@ -81,7 +81,7 @@
     <script>
         $(document).ready( function () {
             $('#scheduleTable').DataTable(
-
+                {responsive: true}
             );
             $('#scheduleTable').DataTable().column(7).search("Fall 2023").draw();
         } );

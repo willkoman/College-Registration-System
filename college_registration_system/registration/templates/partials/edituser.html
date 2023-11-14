@@ -1,0 +1,133 @@
+<!-- Assuming 'form' is your context variable for the UserCompositeForm instance -->
+{% comment %} if user:
+if hasattr(user, 'login'):
+    self.fields['email'].initial = user.login.email
+    self.fields['no_of_attempts'].initial = user.login.no_of_attempts
+    self.fields['is_locked'].initial = user.login.is_locked
+if hasattr(user, 'student'):
+    self.fields['studentID'].initial = user.student.studentID
+    self.fields['major_id'].initial = user.student.major_id
+    self.fields['minor_id'].initial = user.student.minor_id
+    self.fields['enrollment_year'].initial = user.student.enrollment_year
+    self.fields['student_type'].initial = user.student.student_type
+if hasattr(user, 'faculty'):
+    self.fields['rank'].initial = user.faculty.rank
+    self.fields['departments'].initial = user.faculty.departments
+    self.fields['specialty'].initial = user.faculty.specialty
+    self.fields['fac_type'].initial = user.faculty.fac_type
+if hasattr(user, 'admin'):
+    self.fields['access_level'].initial = user.admin.access_level
+# Initialize Faculty and Admin fields similarly {% endcomment %}
+
+<form id="editUserForm" method="post" action="{% url 'update_user' %}">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+        {{ form.email }}
+    </div>
+{% comment %}fields = ['first_name', 'last_name', 'gender', 'dob', 'street', 'city', 'state', 'zip_code', 'user_type']
+ {% endcomment %}
+    <div class="form-group">
+        <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+        {{ form.first_name }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+        {{ form.last_name }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.gender.id_for_label }}">{{ form.gender.label }}</label>
+        {{ form.gender }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.dob.id_for_label }}">{{ form.dob.label }}</label>
+        {{ form.dob }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.street.id_for_label }}">{{ form.street.label }}</label>
+        {{ form.street }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+        {{ form.city }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.state.id_for_label }}">{{ form.state.label }}</label>
+        {{ form.state }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.zip_code.id_for_label }}">{{ form.zip_code.label }}</label>
+        {{ form.zip_code }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.no_of_attempts.id_for_label }}">{{ form.no_of_attempts.label }}</label>
+        {{ form.no_of_attempts }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.is_locked.id_for_label }}">{{ form.is_locked.label }}</label>
+        {{ form.is_locked }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.user_type.id_for_label }}">{{ form.user_type.label }}</label>
+        {{ form.user_type }}
+    </div>
+
+    <!-- Student-specific Fields -->
+    <div id="studentFields" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.studentID.id_for_label }}">{{ form.studentID.label }}</label>
+            {{ form.studentID }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.major_id.id_for_label }}">{{ form.major_id.label }}</label>
+            {{ form.major_id }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.minor_id.id_for_label }}">{{ form.minor_id.label }}</label>
+            {{ form.minor_id }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.enrollment_year.id_for_label }}">{{ form.enrollment_year.label }}</label>
+            {{ form.enrollment_year }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.student_type.id_for_label }}">{{ form.student_type.label }}</label>
+            {{ form.student_type }}
+        </div>
+    </div>
+
+
+    <!-- Faculty-specific Fields -->
+    <div id="facultyFields" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.rank.id_for_label }}">{{ form.rank.label }}</label>
+            {{ form.rank }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.departments.id_for_label }}">{{ form.departments.label }}</label>
+            {{ form.departments }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.specialty.id_for_label }}">{{ form.specialty.label }}</label>
+            {{ form.specialty }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.fac_type.id_for_label }}">{{ form.fac_type.label }}</label>
+            {{ form.fac_type }}
+        </div>
+
+    </div>
+
+    <!-- Admin-specific Fields -->
+    <div id="adminFields" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.access_level.id_for_label }}">{{ form.access_level.label }}</label>
+            {{ form.access_level }}
+        </div>
+    </div>
+
+    <!-- Submit button -->
+    {% comment %} <button type="submit" class="btn btn-primary">Save changes</button> {% endcomment %}
+</form>
+

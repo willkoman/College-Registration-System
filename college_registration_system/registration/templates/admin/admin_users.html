@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
+    Add User
+</button>
+<table id="userTable" class="display">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Hold(s)</th>
+            <th>Email</th>
+            <th>ID</th>
+            <th>Login Attempts</th>
+            <th>Locked</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.first_name }} {{ user.last_name }}</td>
+            <td>{{ user.user_type }}</td>
+            <td>{% for hold in holds %}{% if hold.student == user.student %}{{ hold.hold_type }}{% endif %}{% endfor %}</td>
+            <td>{{ user.login.email }}</td>
+            <td>{{ user.id }}</td>
+            <td>{{ user.login.no_of_attempts }}</td>
+            <td>{{ user.login.is_locked }}</td>
+            <td>
+                <button class="btn btn-primary edit-btn"
+                data-userid="{{ user.id }}"
+                data-firstname="{{ user.first_name }}"
+                data-lastname="{{ user.last_name }}"
+                data-email="{{ user.login.email }}"
+                data-usertype="{{ user.user_type }}"
+                data-attempts="{{ user.login.no_of_attempts }}"
+                data-locked="{{ user.login.is_locked }}"
+                >Edit</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" id="userEditModal" tabindex="-1" role="dialog" aria-labelledby="userEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userEditModalLabel">Edit User</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" method="post" action="{% url 'update_user' %}">
+                    {% csrf_token %}
+
+                    <!-- Common Fields -->
+                    <!-- These fields are always shown -->
+
+                    <!-- Student-specific Fields -->
+                    <div id="studentFields" class="user-type-fields" style="display: none;">
+                        <!-- Render student fields here -->
+                        <p>Student Fields</p>
+
+                    </div>
+
+                    <!-- Faculty-specific Fields -->
+                    <div id="facultyFields" class="user-type-fields" style="display: none;">
+                        <!-- Render faculty fields here -->
+                        <p>Faculty Fields</p>
+                    </div>
+
+                    <!-- Admin-specific Fields -->
+                    <div id="adminFields" class="user-type-fields" style="display: none;">
+                        <!-- Render admin fields here -->
+                        <p>Admin Fields</p>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveUserBtn">Save changes</button>
+                {% csrf_token %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function () {
+        console.log("Script loaded and executing."); // Diagnostic log
+
+        $('#userTable').DataTable({responsive: true});
+
+        function toggleUserTypeFields(userType) {
+            // Explicitly hide all user-type fields first
+            $('#studentFields').css('display', 'none');
+            $('#facultyFields').css('display', 'none');
+            $('#adminFields').css('display', 'none');
+
+            // Then show the fields for the selected user type
+            if (userType === 'Student') {
+                $('#studentFields').css('display', 'block');
+            } else if (userType === 'Faculty') {
+                $('#facultyFields').css('display', 'block');
+            } else if (userType === 'Admin') {
+                $('#adminFields').css('display', 'block');
+            }
+        }
+
+        $(document).on('change', '#id_user_type', function() {
+            var selectedType = $(this).val();
+            console.log("User type changed to:", selectedType); // Diagnostic log
+            toggleUserTypeFields(selectedType);
+        });
+
+        $('.edit-btn').on('click', function() {
+            var userId = $(this).data('userid');
+            console.log("Edit button clicked for user ID:", userId); // Diagnostic log
+            $('#userEditModal').modal('show');
+
+            $.ajax({
+                url: "{% url 'get_user_form' %}",
+                data: {'user_id': userId},
+                success: function (data) {
+                    console.log("Form data loaded via AJAX."); // Diagnostic log
+                    $('#editUserForm').html(data);
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'csrfmiddlewaretoken',
+                        value: '{{ csrf_token }}'
+                    }).appendTo('#editUserForm');
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'user_id',
+                        value: userId
+                    }).appendTo('#editUserForm');
+
+                    var currentUserType = $('#id_user_type').val();
+                    console.log("Current user type:", currentUserType); // Diagnostic log
+                    toggleUserTypeFields(currentUserType);
+                }
+            });
+        });
+        // Save button click action
+        $('#saveUserBtn').on('click', function() {
+            var formData = $('#editUserForm').serialize();
+            $.ajax({
+                url: $('#editUserForm').attr('action'),
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        window.location.href = response.redirect_url;
+                    } else {
+                        alert('Error updating user');
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}

@@ -94,7 +94,7 @@
       </li>
       <li class="nav-item">
         {% if usertype == None %}
-            <a class="nav-link" href="/login/">Login</a>
+            <a class="nav-link" href="/login/" style="color:var(--primary-color)">Login</a>
         {% endif %}
         {% if usertype == "Student" %}
             <a class="nav-link" href="/student/" onclick="showLoadingModal()">Student View</a>
@@ -171,5 +171,30 @@
   function hideLoadingModal() {
       $('#loadingModal').hide();
   }
+
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+          if (!this.crossDomain) {
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          }
+      }
+  });
 </script>
 </html>

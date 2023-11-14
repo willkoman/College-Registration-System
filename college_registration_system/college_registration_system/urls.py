@@ -40,7 +40,7 @@ urlpatterns = [
     path('student/', views.student_view, name='student_view'),
     path('enrollment/', views.enrollment_view, name='enrollment_view'),
     path('register/<int:section_id>/', views.register, name='register'),
-    path('dropcourse/<int:section_id>/', views.drop_course, name='drop_course'),
+    path('S/<int:section_id>/', views.drop_course, name='drop_course'),
     path('course/<int:course_id>/', views.course_view, name='course_view'),
     path('faculty-directory/', views.faculty_directory, name='faculty_directory'),
     path('faculty/<str:user_id>/', views.faculty, name='faculty'),
@@ -49,5 +49,9 @@ urlpatterns = [
     path('faculty/', views.faculty_view, name='faculty_view'),
     path('calendar/', views.calendar_view, name='calendar_view'),
     path('events/', views.events_view, name='events_view'),
+
+    path('admin/users/', views.admin_users_view, name='admin_users_view'),
+    path('get_user_form/', views.get_user_form, name='get_user_form'),
+    path('update_user/', views.update_user, name='update_user'),
 
 ]

@@ -62,10 +62,19 @@ def create_or_update_user_login(sender, instance, created, **kwargs):
     try:
         if instance.user_type == 'Admin':
             Admin.objects.get_or_create(user_id=instance.id)
+            #delete other subtypes
+            Student.objects.filter(user_id=instance.id).delete()
+            Faculty.objects.filter(user_id=instance.id).delete()
         elif instance.user_type == 'Student':
             Student.objects.get_or_create(user_id=instance.id)
+            #delete other subtypes
+            Admin.objects.filter(user_id=instance.id).delete()
+            Faculty.objects.filter(user_id=instance.id).delete()
         elif instance.user_type == 'Faculty':
             Faculty.objects.get_or_create(user_id=instance.id)
+            #delete other subtypes
+            Admin.objects.filter(user_id=instance.id).delete()
+            Student.objects.filter(user_id=instance.id).delete()
     except:
         pass
 

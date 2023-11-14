@@ -1,9 +1,12 @@
 import datetime
+from django.forms import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+
+from .forms import UserCompositeForm
 from .models import CoursePrereq, Semester,Hold, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
 import requests
@@ -48,6 +51,8 @@ def user_login(request):
                     if userlogin.is_locked:
                         error_message = "Your account is locked. Please contact the system administrator."
                         return render(request, 'login.html',{'error_message': error_message})
+                userlogin.no_of_attempts = 0  # Reset the no_of_attempts to 0
+                userlogin.save()  # Save the updated Login object
                 return redirect('/homepage/')
             except Exception as e:
                 print("Exception:", e)  # Debugging line
@@ -540,3 +545,79 @@ def drop_course(request,section_id):
         # Add a failure message
         messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
     return redirect('/enrollment/')
+
+
+#### ADMIN VIEWS ####
+@login_required(login_url='user_login')
+def admin_users_view(request, user_id=None):
+    user = None
+    if user_id:
+        user = User.objects.get(id=user_id)
+        form = UserCompositeForm(instance=user)
+    else:
+        form = UserCompositeForm()
+
+    if request.method == 'POST':
+        form = UserCompositeForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            # Redirect to user list or detail view
+            return redirect('admin_users_view')
+
+    context = {
+        'form': form,
+        'users': User.objects.all().select_related('student', 'faculty', 'admin', 'login'),
+        'holds': Hold.objects.all(),
+        # ... other context data ...
+    }
+    return render(request, 'admin/admin_users.html', context)
+
+def get_user_form(request):
+    user_id = request.GET.get('user_id')
+    user = User.objects.get(id=user_id)
+    form = UserCompositeForm(instance=user)
+
+    # Assuming you're using Django templates, render the form to a template,
+    # or find another way to split the form fields based on user type.
+    return render(request, 'partials/edituser.html', {'form': form})
+
+def update_user(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        user_type = request.POST.get('user_type')
+        print("User ID:", user_id)
+
+        user = get_object_or_404(User, id=user_id)
+        form = UserCompositeForm(request.POST, instance=user)
+
+        if form.is_valid():
+            user_instance = form.save()
+
+            if user_type == 'Student':
+                student, created = Student.objects.get_or_create(user=user_instance)
+                student.studentID = form.cleaned_data.get('studentID')
+                student.major_id = form.cleaned_data.get('major_id')
+                student.minor_id = form.cleaned_data.get('minor_id')
+                student.enrollment_year = form.cleaned_data.get('enrollment_year')
+                student.student_type = form.cleaned_data.get('student_type')
+                student.save()
+            elif user_type == 'Faculty':
+                faculty, created = Faculty.objects.get_or_create(user=user_instance)
+                faculty.rank = form.cleaned_data.get('rank')
+                faculty.departments.set(form.cleaned_data.get('departments'))
+                faculty.specialty = form.cleaned_data.get('specialty')
+                faculty.fac_type = form.cleaned_data.get('fac_type')
+                faculty.save()
+            elif user_type == 'Admin':
+                admin, created = Admin.objects.get_or_create(user=user_instance)
+                admin.access_level = form.cleaned_data.get('access_level')
+                admin.save()
+
+            messages.success(request, 'User edited successfully.')
+            return JsonResponse({'status': 'success', 'redirect_url': '/admin/users/'})
+        else:
+            messages.error(request, 'Error: User could not be edited.')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+
+    return JsonResponse({'status': 'method not allowed'}, status=405)

@@ -51,6 +51,7 @@ urlpatterns = [
     path('events/', views.events_view, name='events_view'),
 
     path('admin/users/', views.admin_users_view, name='admin_users_view'),
+    path('admin/courses/', views.admin_course_view, name='admin_course_view'),
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
 

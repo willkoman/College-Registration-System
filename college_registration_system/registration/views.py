@@ -507,6 +507,18 @@ def register(request, section_id):
         #     raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
 
         '''All checks passed, save enrollment'''
+                #if student has registered for more than 2 courses this semester, they are now a fulltime student
+        if Enrollment.objects.filter(student=student, section__semester=section.semester).count() > 2:
+            if student.student_type == 'Undergraduate':
+                #get undergrad object and change to fulltime
+                undergrad = Undergraduate.objects.get(student=student)
+                undergrad.undergrad_student_type = 'Fulltime'
+                undergrad.save()
+            elif student.student_type == 'Graduate':
+                #get grad object and change to fulltime
+                grad = Graduate.objects.get(student=student)
+                grad.grad_student_type = 'Fulltime'
+                grad.save()
         enrollment.save()
         # Add a success message
         messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
@@ -540,6 +552,7 @@ def drop_course(request,section_id):
                 grad = Graduate.objects.get(student=student)
                 grad.grad_student_type = 'Parttime'
                 grad.save()
+
     except Exception as e:
         print("Exception:", e)
         # Add a failure message
@@ -623,3 +636,12 @@ def update_user(request):
 
 
     return JsonResponse({'status': 'method not allowed'}, status=405)
+
+@login_required(login_url='user_login')
+def admin_course_view(request):
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    context['courses'] = Course.objects.all()
+    return render(request, 'admin/admin_courses.html', context)

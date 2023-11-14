@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<table id="courseTable" class="display">
+    <thead>
+        <tr>
+            <th>Course Name</th>
+            <th>Department</th>
+            <th>Course ID</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course in courses %}
+        <tr>
+            <td>{{ course }}</td>
+            <td>{{ course.department }}</td>
+            <td>{{course.course_id}}</td>
+            <td>{{ course.description}}</td>
+            <td>
+                <button class="btn btn-primary edit-btn"
+                >Edit course</button>
+                <button class="btn btn-secondary edit-btn"
+                >Edit sections</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{%endblock%}
+
+{% block script %}
+<script>
+    $(document).ready(function () {
+        $('#courseTable').DataTable();
+    });
+</script>
+{% endblock %}
+```

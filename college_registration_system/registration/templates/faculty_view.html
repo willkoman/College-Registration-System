@@ -6,11 +6,140 @@
     <h2 class="text-center">Welcome, {{username}}</h2>
     <h3 class="text-center">You are a {{faculty.fac_type|lower}} faculty member in the {% for dept in faculty.departments.all %}<i>{{ dept.department_name }}</i>{% if not forloop.last %}, {% endif %}{% endfor %} Department(s)</h3>
     <h3 class="text-center">You are currently teaching the following courses:</h3>
-    <ul class = "text-center list-unstyled">
-        {% for course in courses.all %}
-        <li>{{ course.course }} - {{course.timeslot}}</li>
+    <table class='table table-bordered' id="courseTable">
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>Section</th>
+                <th>Timeslot</th>
+                <th>Term</th>
+                <th>View Gradebook</th>
+                <th>View Attendance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course.course }}</td>
+                <td>{{ course.crn }}</td>
+                <td>{{course.timeslot}}
+                <td>{{ course.semester }}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-primary"> <a href="/gradebook/{{course.course_id}}/" class="text-white">View Gradebook</a></button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-primary"> <a href="/attendance/{{course.course_id}}" class="text-white">View Attendances</a></button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    {% if manager %}
+    <h3 class="text-center">You are currently supervising the following students:</h3>
+    {% comment %} <ul class = "text-center list-unstyled">
+        {% for student in students.all %}
+        <li>{{ student }}</li>
         {% endfor %}
+    </ul> {% endcomment %}
+    <table class="table table-bordered" id='managingTable'>
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Student ID</th>
+                <th>Student Email</th>
+                <th>View History</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.student.user.first_name }} {{ student.student.user.last_name }}</td>
+                <td>{{ student.student.studentID }}</td>
+                <td>{{ student.email }}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-primary view-btn" data-student-id="{{ student.student.studentID }}">View History</button>
+                    <div class="student-history d-none">
+                    {% for course in student.course_history.all %}
+                        <span class="history-item" data-course="{{ course.course }}" data-grade="{{ course.grade }}" data-semester="{{ course.semester }}"></span>
+                    {% endfor %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" role="dialog" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historyModalLabel">Student History</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class='table' id='historyTable'>
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Grade</th>
+                            <th>Semester</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in student.course_history.all %}
+                        <tr>
+                            <td>{{ course.course }}</td>
+                            <td>{{ course.grade }}</td>
+                            <td>{{ course.semester }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#managingTable').DataTable({responsive: true});
+        $('#courseTable').DataTable({responsive: true});
+
+        $('#managingTable').on('click', '.view-btn', function() {
+            // Find the hidden div with the student's history
+            var historyDiv = $(this).siblings('.student-history');
+
+            // Clear existing data in historyTable
+            var historyTableBody = $('#historyTable tbody');
+            historyTableBody.empty();
+
+            // Populate historyTable with this student's history
+            historyDiv.find('.history-item').each(function() {
+                var course = $(this).data('course');
+                var grade = $(this).data('grade');
+                var term = $(this).data('semester');
+
+                historyTableBody.append('<tr><td>' + course + '</td><td>' + grade + '</td><td>' + term + '</td></tr>');
+            });
+
+            $('#historyTable').DataTable();
+
+
+            // Show modal
+            $('#historyModal').modal('show');
+        });
+    });
+</script>
+{% endblock %}
+
 

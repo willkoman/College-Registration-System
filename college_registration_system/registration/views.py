@@ -208,6 +208,19 @@ def faculty_view(request):
         'faculty': fac,
     }
     context['courses'] = CourseSection.objects.filter(faculty=fac)
+    context['manager'] = Department.objects.filter(manager_id=fac)
+
+    if context['manager'].exists():
+        #get major in department
+        context['major'] = Major.objects.filter(department=context['manager'][0])
+        #get all students in major
+        students = Student.objects.filter(major_id=context['major'][0])
+        #attach email to each student from login to context
+        context['students'] = []
+        for student in students:
+            student_course_history = StudentHistory.objects.filter(student=student)
+            context['students'].append({'student': student, 'email': Login.objects.get(user=student.user).email,'course_history': student_course_history})
+
     return render(request, 'faculty_view.html', context)
 
 

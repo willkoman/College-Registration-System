@@ -625,10 +625,10 @@ def update_user(request):
                 admin.save()
 
             messages.success(request, 'User edited successfully.')
-            return redirect('/admin/users/')
+            return JsonResponse({'status': 'success', 'redirect_url': '/admin/users/'})
         else:
             messages.error(request, 'Error: User could not be edited.')
-            return redirect('/admin/users/')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
 
 
     return JsonResponse({'status': 'method not allowed'}, status=405)
@@ -701,9 +701,9 @@ def update_gradebook(request):
             enrollment.save()
         messages.success(request, f'Grades updated successfully.',extra_tags='Success')
         print("gradebook/"+str(enrollment.section.crn))
-        return redirect('/gradebook/'+str(enrollment.section.crn))
+        return JsonResponse({'status': 'success','redirect_url': '/gradebook/'+str(enrollment.section.crn)})
     else:
         messages.error(request, f'An error occurred while updating grades.',extra_tags='Error')
-        return redirect('/gradebook/'+str(enrollment.section.crn))
+        return JsonResponse({'status': 'error'}, status=400)
 
 #endregion

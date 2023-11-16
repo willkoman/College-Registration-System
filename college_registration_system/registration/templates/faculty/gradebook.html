@@ -7,7 +7,7 @@
 
     <form id="gradebookForm" method="post" action="{% url 'update_gradebook' %}">
         {% csrf_token %}
-        <table id="gradeTable" class="table table-striped">
+        <table id="gradeTable" class="table">
             <thead>
                 <tr>
                     <th>Student</th>
@@ -36,7 +36,9 @@
     $(document).ready(function() {
         $('#gradeTable').DataTable({
             responsive: true,
+            paging: false,
         }
+        );
 
         $('#gradebookForm').submit(function(event) {
             event.preventDefault(); // Prevent the form from submitting via the browser
@@ -50,8 +52,7 @@
                     if (response.status === 'success') {
                         window.location.href = response.redirect_url;
                     } else {
-                        // Handle errors
-                        alert('Error updating grades');
+                        alert('Error updating user');
                     }
                 }
             });

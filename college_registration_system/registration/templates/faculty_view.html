@@ -114,8 +114,8 @@
 <script>
     $(document).ready(function() {
         $('#managingTable').DataTable({responsive: true});
-        $('#courseTable').DataTable({responsive: true});
-
+        $('#courseTable').DataTable({responsive: true, "order": [[3, "asc"]]});
+        //sort courseTable by semester
         $('#managingTable').on('click', '.view-btn', function() {
             // Find the hidden div with the student's history
             var historyDiv = $(this).siblings('.student-history');

@@ -17,7 +17,7 @@ add_drop_periods = Semester.objects.all().order_by('start_date')
 #add_drop periods end 2 weeks after the start date of the semester and start 4 weeks before the start date of the semester
 for period in add_drop_periods:
     period.add_drop_end_date = period.start_date + datetime.timedelta(days=14)
-    period.add_drop_start_date = period.start_date - datetime.timedelta(days=28)
+    period.add_drop_start_date = period.start_date - datetime.timedelta(days=48)
     period.save()
 #region core
 # @login_required(login_url='user_login')
@@ -171,138 +171,7 @@ def schedule_view(request):
 
     context['sections']=formatted_sections
     return render(request, 'schedule.html', context)
-#endregion
-@login_required(login_url='user_login')
-def registered_sessions_view(request):
-    if not request.user.user.user_type == 'Student':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    student = request.user.student  # Assuming you have a ForeignKey from User to Student
-    registered_sessions = Enrollment.objects.filter(student=student)
-    return render(request, 'registered_sessions.html', {'registered_sessions': registered_sessions})
 
-@login_required(login_url='user_login')
-def course_history_view(request):
-    if not request.user.user.user_type == 'Student':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-    }
-    student = Student.objects.get(user=request.user.user)
-    context['course_history'] = StudentHistory.objects.filter(student=student)
-    return render(request, 'course_history.html',context)
-
-
-@login_required(login_url='user_login')
-def faculty_view(request):
-    if not request.user.user.user_type == 'Faculty':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    fac = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime').filter(user=request.user.user)[0]
-
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-        'faculty': fac,
-    }
-    context['courses'] = CourseSection.objects.filter(faculty=fac)
-    context['manager'] = Department.objects.filter(manager_id=fac)
-
-    if context['manager'].exists():
-        #get major in department
-        context['major'] = Major.objects.filter(department=context['manager'][0])
-        #get all students in major
-        students = Student.objects.filter(major_id=context['major'][0])
-        #attach email to each student from login to context
-        context['students'] = []
-        for student in students:
-            student_course_history = StudentHistory.objects.filter(student=student)
-            context['students'].append({'student': student, 'email': Login.objects.get(user=student.user).email,'course_history': student_course_history})
-
-    return render(request, 'faculty_view.html', context)
-
-
-@login_required(login_url='user_login')
-def student_view(request):
-    if not request.user.user.user_type == 'Student':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    user = request.user.user
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-    }
-    if request.user.user.user_type == 'Student':
-        #get student with that user and append to context
-        context['student'] = Student.objects.get(user=user)
-
-        try:
-            context['grad'] = Graduate.objects.get(student=context['student'])
-        except:
-            context['undergrad'] = Undergraduate.objects.get(student=context['student'])
-        print("Student:", context['student'])  # Debugging line
-        context['enrollment'] = Enrollment.objects.filter(student=context['student'])
-        context['student_history'] = StudentHistory.objects.filter(student=context['student'])
-
-    elif request.user.user.user_type == 'Faculty':
-        #get faculty with that user and append to context
-        context['faculty'] = Faculty.objects.get(user=user)
-        try:
-            context['office'] = Faculty_FullTime.objects.get(faculty=context['faculty']).office
-        except:
-            context['office'] = Faculty_PartTime.objects.get(faculty=context['faculty']).office
-
-        print("Faculty:", context['faculty'])
-    return render(request, 'student_page.html', context)
-
-@login_required(login_url='user_login')
-def admin_view(request):
-    if not request.user.user.user_type == 'Admin':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-        'admin': Admin.objects.get(user=request.user.user),
-    }
-    #get admin_view.html from templates/admin
-    return render(request, 'admin/admin_view.html', context)
-
-@login_required(login_url='user_login')
-def enrollment_view(request):
-    if not request.user.user.user_type == 'Student':
-        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
-        return redirect('/homepage/')
-    student = request.user.user.student
-    enrollments = Enrollment.objects.filter(student=student).select_related('section', 'section__course', 'section__timeslot').prefetch_related('section__timeslot__days')
-
-    # Prepare a dictionary to map weekdays to FullCalendar indices
-    weekday_to_index = {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6,
-    }
-
-    # For each enrollment, get the day indices
-    for enrollment in enrollments:
-        days = enrollment.section.timeslot.days.all()
-        day_indices = [weekday_to_index[day.weekday] for day in days]
-        enrollment.day_indices = day_indices  # Assign the indices list to the enrollment object
-
-    context = {
-        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
-        'usertype': request.user.user.user_type,
-        'enrollment': enrollments,
-    }
-
-
-    return render(request, 'enrollment.html', context)
 
 # @login_required(login_url='user_login')
 def course_view(request,course_id):
@@ -471,6 +340,99 @@ def events_view(request):
     return render(request, 'events.html', context)
 
 
+#endregion
+#region student
+#### STUDENT VIEWS ####
+@login_required(login_url='user_login')
+def registered_sessions_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    student = request.user.student  # Assuming you have a ForeignKey from User to Student
+    registered_sessions = Enrollment.objects.filter(student=student)
+    return render(request, 'registered_sessions.html', {'registered_sessions': registered_sessions})
+
+@login_required(login_url='user_login')
+def course_history_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    student = Student.objects.get(user=request.user.user)
+    context['course_history'] = StudentHistory.objects.filter(student=student)
+    return render(request, 'course_history.html',context)
+
+
+@login_required(login_url='user_login')
+def student_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    user = request.user.user
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    if request.user.user.user_type == 'Student':
+        #get student with that user and append to context
+        context['student'] = Student.objects.get(user=user)
+
+        try:
+            context['grad'] = Graduate.objects.get(student=context['student'])
+        except:
+            context['undergrad'] = Undergraduate.objects.get(student=context['student'])
+        print("Student:", context['student'])  # Debugging line
+        context['enrollment'] = Enrollment.objects.filter(student=context['student'])
+        context['student_history'] = StudentHistory.objects.filter(student=context['student'])
+
+    elif request.user.user.user_type == 'Faculty':
+        #get faculty with that user and append to context
+        context['faculty'] = Faculty.objects.get(user=user)
+        try:
+            context['office'] = Faculty_FullTime.objects.get(faculty=context['faculty']).office
+        except:
+            context['office'] = Faculty_PartTime.objects.get(faculty=context['faculty']).office
+
+        print("Faculty:", context['faculty'])
+    return render(request, 'student_page.html', context)
+
+@login_required(login_url='user_login')
+def enrollment_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    student = request.user.user.student
+    enrollments = Enrollment.objects.filter(student=student).select_related('section', 'section__course', 'section__timeslot').prefetch_related('section__timeslot__days')
+
+    # Prepare a dictionary to map weekdays to FullCalendar indices
+    weekday_to_index = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6,
+    }
+
+    # For each enrollment, get the day indices
+    for enrollment in enrollments:
+        days = enrollment.section.timeslot.days.all()
+        day_indices = [weekday_to_index[day.weekday] for day in days]
+        enrollment.day_indices = day_indices  # Assign the indices list to the enrollment object
+
+    context = {
+        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'enrollment': enrollments,
+    }
+
+
+    return render(request, 'enrollment.html', context)
+
 @login_required(login_url='user_login')
 def register(request, section_id):
     if not request.user.user.user_type == 'Student':
@@ -492,7 +454,8 @@ def register(request, section_id):
             raise Exception("You have already registered for 4 courses in this semester.")
         #if same timeslot in coursesection already in enrollment, raise exception
         if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
-            raise Exception("You have already registered for a course in this timeslot.")
+            if section.semester == Enrollment.objects.get(student=student, section__timeslot=section.timeslot).section.semester:
+                raise Exception("You have already registered for a course in this timeslot for this semester.")
         #if student has completed course already with grade C or higher, raise exception
         if Enrollment.objects.filter(student=student, section__course=section.course).exists():
             raise Exception("You are already registered for this course.")
@@ -514,11 +477,12 @@ def register(request, section_id):
             raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
         #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
         #TODO: UNCOMMENT WHEN NO LONGER TESTING
-        # semes = section.semester
-        # semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
-        # if datetime.date.today() < semes.add_drop_start_date or datetime.date.today() > semes.add_drop_end_date:
-        #     raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
-
+        semes = section.semester
+        semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
+        if datetime.date.today() > semes.add_drop_end_date:
+            raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+        if datetime.date.today() < semes.add_drop_start_date:
+            raise Exception(f"Add/Drop period for {section.semester} has not started yet. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
         '''All checks passed, save enrollment'''
                 #if student has registered for more than 2 courses this semester, they are now a fulltime student
         if Enrollment.objects.filter(student=student, section__semester=section.semester).count() > 2:
@@ -572,8 +536,22 @@ def drop_course(request,section_id):
         messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
     return redirect('/enrollment/')
 
-
+#endregion
+#region admin
 #### ADMIN VIEWS ####
+@login_required(login_url='user_login')
+def admin_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'admin': Admin.objects.get(user=request.user.user),
+    }
+    #get admin_view.html from templates/admin
+    return render(request, 'admin/admin_view.html', context)
+
 @login_required(login_url='user_login')
 def admin_users_view(request, user_id=None):
     user = None
@@ -609,7 +587,12 @@ def get_user_form(request):
     # or find another way to split the form fields based on user type.
     return render(request, 'partials/edituser.html', {'form': form})
 
+@login_required(login_url='user_login')
 def update_user(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         user_type = request.POST.get('user_type')
@@ -658,3 +641,68 @@ def admin_course_view(request):
     }
     context['courses'] = Course.objects.all()
     return render(request, 'admin/admin_courses.html', context)
+#endregion
+#region faculty
+#### FACULTY VIEWS ####
+
+@login_required(login_url='user_login')
+def faculty_view(request):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    fac = Faculty.objects.select_related('faculty_fulltime', 'faculty_parttime').filter(user=request.user.user)[0]
+
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'faculty': fac,
+    }
+    context['courses'] = CourseSection.objects.filter(faculty=fac)
+    context['manager'] = Department.objects.filter(manager_id=fac)
+
+    if context['manager'].exists():
+        #get major in department
+        context['major'] = Major.objects.filter(department=context['manager'][0])
+        #get all students in major
+        students = Student.objects.filter(major_id=context['major'][0])
+        #attach email to each student from login to context
+        context['students'] = []
+        for student in students:
+            student_course_history = StudentHistory.objects.filter(student=student)
+            context['students'].append({'student': student, 'email': Login.objects.get(user=student.user).email,'course_history': student_course_history})
+
+    return render(request, 'faculty_view.html', context)
+
+def gradebook_view(request, section_id):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+    print("Section ID:", section_id)
+    section = CourseSection.objects.get(crn=section_id)
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'section': section,
+    }
+    context['enrollments'] = Enrollment.objects.filter(section=section)
+    return render(request, 'faculty/gradebook.html', context)
+
+def update_gradebook(request):
+    #recieve a list of enrollments and update the grades
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+    if request.method == 'POST':
+        enrollments = request.POST.getlist('enrollments[]')
+        grades = request.POST.getlist('grades[]')
+        for enrollment, grade in zip(enrollments, grades):
+            enrollment = Enrollment.objects.get(id=enrollment)
+            enrollment.grade = grade
+            enrollment.save()
+        messages.success(request, f'Grades updated successfully.',extra_tags='Success')
+        return JsonResponse({'status': 'success', 'redirect_url': '/gradebook/'+str(enrollment.section.crn)})
+    else:
+        messages.error(request, f'An error occurred while updating grades.',extra_tags='Error')
+        return JsonResponse({'status': 'error'}, status=400)
+
+#endregion

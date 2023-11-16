@@ -55,4 +55,7 @@ urlpatterns = [
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
 
+    path('gradebook/<int:section_id>/', views.gradebook_view, name='gradebook_view'),
+    path('update_gradebook/', views.update_gradebook, name='update_gradebook'),
+
 ]

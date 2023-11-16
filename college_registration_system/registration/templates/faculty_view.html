@@ -22,17 +22,18 @@
             <tr>
                 <td>{{ course.course }}</td>
                 <td>{{ course.crn }}</td>
-                <td>{{course.timeslot}}
+                <td>{{ course.timeslot }}
                 <td>{{ course.semester }}</td>
                 <td style="text-align: center;">
-                    <button class="btn btn-primary"> <a href="/gradebook/{{course.course_id}}/" class="text-white">View Gradebook</a></button>
+                    <button class="btn btn-primary"> <a href="/gradebook/{{course.crn}}/" class="text-white">View Gradebook</a></button>
                 </td>
                 <td style="text-align: center;">
-                    <button class="btn btn-primary"> <a href="/attendance/{{course.course_id}}" class="text-white">View Attendances</a></button>
+                    <button class="btn btn-primary"> <a href="/attendance/{{course.crn}}" class="text-white">View Attendances</a></button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
+    </table>
     {% if manager %}
     <h3 class="text-center">You are currently supervising the following students:</h3>
     {% comment %} <ul class = "text-center list-unstyled">

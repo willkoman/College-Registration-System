@@ -1,0 +1,63 @@
+{% extends 'base.html'%}
+{% block content %}
+    {% comment %} return to /faculty/ {% endcomment %}
+<button class="btn btn-primary text-light" onclick="window.location.href='/faculty/'">Back</button>
+    {% comment %} return to /faculty/ {% endcomment %}
+    <h1>Gradebook for {{ section }}</h1>
+
+    <form id="gradebookForm" method="post" action="{% url 'update_gradebook' %}">
+        {% csrf_token %}
+        <table id="gradeTable" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                    <tr>
+                        <td>{{ enrollment.student.user.first_name }} {{enrollment.student.user.last_name}}</td>
+                        <td>
+                            <!-- Make grade editable -->
+                            <input type="hidden" name="enrollments[]" value="{{ enrollment.id }}">
+                            <input type="text" name="grades[]" value="{{ enrollment.grade }}">
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Update Grades</button>
+    </form>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#gradeTable').DataTable({
+            responsive: true,
+        }
+
+        $('#gradebookForm').submit(function(event) {
+            event.preventDefault(); // Prevent the form from submitting via the browser
+            var formData = $(this).serialize();
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        window.location.href = response.redirect_url;
+                    } else {
+                        // Handle errors
+                        alert('Error updating grades');
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+

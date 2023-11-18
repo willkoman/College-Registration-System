@@ -3,6 +3,7 @@
 {% load custom_filters %}
 {% block content %}
 <div class="container mt-5">
+    <button class="btn btn-primary" onclick="window.location.href='/faculty/'">Back</button>
     <h2>Attendance for {{ section.course.course_name }} (CRN: {{ section.crn }})</h2>
     <p class="hidden" id="sectionID" style="display:none;">{{ section.crn }}</p>
     <form method="post" action="{% url 'update_attendance' section_id=section.crn %}">

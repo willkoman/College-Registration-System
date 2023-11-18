@@ -4,10 +4,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.http import HttpResponse, JsonResponse
-
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.db import transaction
 from .forms import UserCompositeForm
-from .models import CoursePrereq, Semester,Hold, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
+from .models import CoursePrereq,Attendance, Semester,Hold, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
 from django.contrib import messages
 import requests
 import json
@@ -31,47 +31,54 @@ def root_redirect(request):
 
 def user_login(request):
     error_message = ''
+    # Capture the 'next' parameter from the URL or set a default
+    next_page = request.GET.get('next', '/homepage/')
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        if email and password:  # Check if email and password are not Nonew
+        next_page = request.POST.get('next') or next_page
+        if email and password:
             userlogin = authenticate(request, email=email, password=password)
         else:
             error_message = "Email and/or Password cannot be blank."
-        print("Userlogin:", userlogin)  # Debugging line
+        print("Userlogin:", userlogin)
 
         if userlogin is not None:
             login(request, userlogin)
             try:
-                print("User Type:", userlogin.user.user_type)  # Debugging line
+                print("User Type:", userlogin.user.user_type)
                 if userlogin.user.user_type == 'Admin':
-                    # return redirect('/admin/')
                     pass
                 elif userlogin.user.user_type in ['Faculty', 'Student']:
                     if userlogin.is_locked:
                         error_message = "Your account is locked. Please contact the system administrator."
-                        return render(request, 'login.html',{'error_message': error_message})
-                userlogin.no_of_attempts = 0  # Reset the no_of_attempts to 0
-                userlogin.save()  # Save the updated Login object
-                return redirect('/homepage/')
+                        return render(request, 'login.html', {'error_message': error_message})
+
+                userlogin.no_of_attempts = 0
+                userlogin.save()
+
+                # Redirect to 'next_page' if it exists, else redirect to homepage
+                print("Next page:", next_page)
+                return HttpResponseRedirect(next_page)
             except Exception as e:
-                print("Exception:", e)  # Debugging line
-                error_message="Error: User type not recognized."
+                print("Exception:", e)
+                error_message = "Error: User type not recognized."
         else:
             try:
-                login_obj = Login.objects.get(email=email)  # Get the Login object based on the email
+                login_obj = Login.objects.get(email=email)
                 if login_obj.no_of_attempts >= 3:
                     error_message = "You have exceeded the maximum number of login attempts. Please contact the system administrator."
-                    login_obj.is_locked = True  # Lock the Login object
-                    login_obj.save()  # Save the updated Login object
-                    return render(request, 'login.html',{'error_message': error_message})
-                login_obj.no_of_attempts += 1  # Increment the no_of_attempts by 1
-                login_obj.save()  # Save the updated Login object
+                    login_obj.is_locked = True
+                    login_obj.save()
+                    return render(request, 'login.html', {'error_message': error_message,'next': next_page})
+
+                login_obj.no_of_attempts += 1
+                login_obj.save()
             except Login.DoesNotExist:
-                # Handle the case where the email does not exist in the Login table
                 pass
-            error_message="Invalid login credentials."
-    return render(request, 'login.html',{'error_message': error_message})
+            error_message = "Invalid login credentials."
+    return render(request, 'login.html', {'error_message': error_message,'next': next_page})
 
 # @login_required(login_url='user_login')
 def homepage(request):
@@ -672,7 +679,7 @@ def faculty_view(request):
             context['students'].append({'student': student, 'email': Login.objects.get(user=student.user).email,'course_history': student_course_history})
 
     return render(request, 'faculty_view.html', context)
-
+@login_required(login_url='user_login')
 def gradebook_view(request, section_id):
     if not request.user.user.user_type == 'Faculty':
         messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
@@ -686,7 +693,7 @@ def gradebook_view(request, section_id):
     }
     context['enrollments'] = Enrollment.objects.filter(section=section)
     return render(request, 'faculty/gradebook.html', context)
-
+@login_required(login_url='user_login')
 def update_gradebook(request):
     #recieve a list of enrollments and update the grades
     if not request.user.user.user_type == 'Faculty':
@@ -705,5 +712,89 @@ def update_gradebook(request):
     else:
         messages.error(request, f'An error occurred while updating grades.',extra_tags='Error')
         return JsonResponse({'status': 'error'}, status=400)
+
+@login_required(login_url='user_login')
+def roster_view(request, section_id):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+    section = CourseSection.objects.get(crn=section_id)
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'section': section,
+    }
+
+    enrollments = Enrollment.objects.filter(section=section)
+    context['enrollments'] = []
+    for enrollment in enrollments:
+        #attach student email to enrollment
+        context['enrollments'].append({'enrollment': enrollment, 'email': Login.objects.get(user=enrollment.student.user).email})
+
+    return render(request, 'faculty/roster.html', context)
+
+def parse_date(date_str):
+    date_parts = date_str.split('-')
+    return datetime.date(int(date_parts[0]), int(date_parts[1]), int(date_parts[2]))
+
+@login_required(login_url='user_login')
+def attendance_view(request, section_id):
+    section = CourseSection.objects.get(crn=section_id)
+    date_str = request.GET.get('date')
+    date = parse_date(date_str) if date_str else None
+    enrollments = Enrollment.objects.filter(section=section)
+    attendances = {}
+    print("Selected Date:", date)
+    if date:
+        for attendance in Attendance.objects.filter(section=section, date_of_class=date):
+            attendances[attendance.student.studentID] = attendance.present
+
+    print("Attendances Dictionary:", attendances)  # Add this line to debug
+
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'section': section,
+        'date': date,
+        'attendances': attendances,
+        'enrollments': enrollments,
+        'selected_date': request.POST.get('date_of_class', datetime.date.today().strftime("%Y-%m-%d"))  # Default to today's date
+    }
+
+    return render(request, 'faculty/attendance.html', context)
+@login_required(login_url='user_login')
+def update_attendance(request, section_id):
+    if request.method == 'POST':
+        date_of_class = request.POST.get('date_of_class')
+        attendances = request.POST.getlist('attendances[]')
+
+        for student_id in attendances:
+            present_value = f'present_{student_id}' in request.POST
+            student = Student.objects.get(studentID=student_id)
+            section = CourseSection.objects.get(crn=section_id)
+            course = section.course
+            #find attendance object with student, section, course, and date_of_class, if it exists, delete it
+            attendance, created = Attendance.objects.get(
+                student=student,
+                section=section,
+                course=course,
+                date_of_class=date_of_class
+            ).delete()
+
+            attendance, created = Attendance.objects.get_or_create(
+                student=student,
+                section=section,
+                course=course,
+                present=present_value,
+                date_of_class=date_of_class
+            )
+            attendance.save()
+
+        messages.success(request, 'Attendance updated successfully.')
+        return JsonResponse({'status': 'success','redirect_url': '/attendance/'+str(section_id)})
+
+    else:
+        messages.error(request, 'An error occurred while updating attendance.')
+        return JsonResponse({'status': 'error','redirect_url':'/attendance/'+str(section_id)}, status=400)
 
 #endregion

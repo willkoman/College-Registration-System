@@ -1,0 +1,44 @@
+{% extends 'base.html'%}
+{% block content %}
+    {% comment %} return to /faculty/ {% endcomment %}
+<button class="btn btn-primary text-light" onclick="window.location.href='/faculty/'">Back</button>
+    {% comment %} return to /faculty/ {% endcomment %}
+    <h1>Roster for {{ section }}</h1>
+
+    <table id="rosterTable" class="table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Student</th>
+                <th>Email</th>
+                <th>Major / Minor</th>
+                <th>Grade</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for enrollment in enrollments %}
+                <tr>
+                    <td>{{ enrollment.enrollment.student.studentID }}</td>
+                    <td>{{ enrollment.enrollment.student.user.first_name }} {{enrollment.enrollment.student.user.last_name}}</td>
+                    <td>{{ enrollment.email }}</td>
+                    <td>{%if enrollment.enrollment.student.major_id is None %}Undecided{%else%}{{ enrollment.enrollment.student.major_id }}{%endif%} {%if enrollment.enrollment.student.minor_id%}/ {{ enrollment.enrollment.student.minor }}{%endif%}</td>
+                    <td>{{ enrollment.enrollment.grade }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#rosterTable').DataTable({
+            responsive: true,
+            paging: false,
+        }
+        );
+    });
+</script>
+{% endblock %}
+
+

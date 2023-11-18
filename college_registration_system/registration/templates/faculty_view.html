@@ -13,8 +13,7 @@
                 <th>Section</th>
                 <th>Timeslot</th>
                 <th>Term</th>
-                <th>View Gradebook</th>
-                <th>View Attendance</th>
+                <th>Actions</td>
             </tr>
         </thead>
         <tbody>
@@ -24,11 +23,10 @@
                 <td>{{ course.crn }}</td>
                 <td>{{ course.timeslot }}
                 <td>{{ course.semester }}</td>
-                <td style="text-align: center;">
-                    <button class="btn btn-primary"> <a href="/gradebook/{{course.crn}}/" class="text-white">View Gradebook</a></button>
-                </td>
-                <td style="text-align: center;">
-                    <button class="btn btn-primary"> <a href="/attendance/{{course.crn}}" class="text-white">View Attendances</a></button>
+                <td style="text-align: center; vertical-align: middle; width: 20%; ">
+                    <button class="btn btn-primary" style="margin:2px" onclick="window.location.href='/roster/{{course.crn}}'">View Roster</button>
+                    <button class="btn btn-primary"style="margin:2px" onclick="window.location.href='/gradebook/{{course.crn}}'">View Gradebook</button>
+                    <button class="btn btn-primary"style="margin:2px" onclick="window.location.href='/attendance/{{course.crn}}'">View Attendances</button>
                 </td>
             </tr>
             {% endfor %}

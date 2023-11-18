@@ -1,22 +1,36 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-    <div class="container mt-5" style=''>
+    <div class="container mt-5">
         <div class="row">
             <div class="col-md-6 offset-md-3">
-                <img src="path/to/your/banner.jpg" class="img-fluid" alt="Banner">
-                <!-- Drop shadow -->
+                <!-- Optional: Banner Image -->
+                <img src="{% static 'path/to/your/banner.jpg' %}" class="img-fluid" alt="Banner">
+
+                <!-- Login Card -->
                 <div class="card" style='color: var(--accent-color); background-color: var(--secondary-color); border-radius: 10px; box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.75);'>
                     <div class="card-body col-lg-6 offset-lg-3">
                         <h5 class="card-title text-center">Log into Michael Hawk University</h5>
 
-                        <form method="post" action="/login/" class='text-center'>
+                        <!-- Login Form -->
+                        <form method="post" action="{% url 'user_login' %}" class='text-center'>
+                            {% csrf_token %}
+
+                            <!-- Error Message Display -->
                             {% if error_message %}
                             <p class="text-danger">{{ error_message }}</p>
                             {% endif %}
-                            {% csrf_token %}
-                            <input type="email" name="email" placeholder="Email" style="display: block; margin: auto;">
-                            <input type="password" name="password" placeholder="Password" style="display: block; margin: auto; margin-bottom: 10px;">
+
+                            <!-- Email Field -->
+                            <input type="email" name="email" placeholder="Email" class="form-control mb-2" required>
+
+                            <!-- Password Field -->
+                            <input type="password" name="password" placeholder="Password" class="form-control mb-3" required>
+
+                            <!-- Hidden Field for 'next' Parameter -->
+                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+                            <!-- Submit Button -->
                             <button type="submit" class="btn btn-primary">Login</button>
                         </form>
                     </div>
@@ -24,5 +38,4 @@
             </div>
         </div>
     </div>
-
 {% endblock %}

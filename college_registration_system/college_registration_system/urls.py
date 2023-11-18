@@ -28,7 +28,7 @@ urlpatterns = [
     # path('login/', views.login_view, name='login'),
     path('', views.root_redirect, name='root_redirect'),
     path('login/', views.user_login, name='user_login'),
-    path('admin/login/', views.user_login, name='user_login'),
+    # path('/login/', views.user_login, name='user_login'),
     path('admin/logout/', views.logout_view, name='logout'),
     path('homepage/', views.homepage, name='homepage'),
     path('logout/', views.logout_view, name='logout'),
@@ -56,6 +56,9 @@ urlpatterns = [
     path('update_user/', views.update_user, name='update_user'),
 
     path('gradebook/<int:section_id>/', views.gradebook_view, name='gradebook_view'),
+    path('roster/<int:section_id>/', views.roster_view, name='roster_view'),
+    path('attendance/<int:section_id>/', views.attendance_view, name='attendance_view'),
+    path('update_attendance/<int:section_id>', views.update_attendance, name='update_attendance'),
     path('update_gradebook/', views.update_gradebook, name='update_gradebook'),
 
 ]

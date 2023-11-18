@@ -1,57 +1,88 @@
-{% extends 'base.html'%}
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
 {% block content %}
-    {% comment %} return to /faculty/ {% endcomment %}
-<button class="btn btn-primary text-light" onclick="window.location.href='/faculty/'">Back</button>
-    {% comment %} return to /faculty/ {% endcomment %}
-    <h1>Gradebook for {{ section }}</h1>
-
-    <form id="gradebookForm" method="post" action="{% url 'update_gradebook' %}">
+<div class="container mt-5">
+    <h2>Attendance for {{ section.course.course_name }} (CRN: {{ section.crn }})</h2>
+    <p class="hidden" id="sectionID" style="display:none;">{{ section.crn }}</p>
+    <form method="post" action="{% url 'update_attendance' section_id=section.crn %}">
         {% csrf_token %}
-        <table id="gradeTable" class="table table-striped">
+        <div class="form-group">
+            <label for="datePicker">Select Date:</label>
+            <input id="datePicker" type="date" name="date_of_class" value="">
+        </div>
+
+        <table class="table table-bordered" id="attendanceTable">
             <thead>
                 <tr>
-                    <th>Student</th>
-                    <th>Grade</th>
+                    <th>Student Name</th>
+                    <th>Present</th>
                 </tr>
             </thead>
             <tbody>
                 {% for enrollment in enrollments %}
-                    <tr>
-                        <td>{{ enrollment.student.user.first_name }} {{enrollment.student.user.last_name}}</td>
-                        <td>
-                            <!-- Make grade editable -->
-                            <input type="hidden" name="enrollments[]" value="{{ enrollment.id }}">
-                            <input type="text" name="grades[]" value="{{ enrollment.grade }}">
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ enrollment.student.user.first_name }} {{ enrollment.student.user.last_name }}</td>
+                    <td>
+                        <input type="checkbox" name="present_{{ enrollment.student.studentID }}" value="true" {% if attendances|get_item:enrollment.student.studentID %} checked {% endif %}>
+                        <input type="hidden" name="attendances[]" value="{{ enrollment.student.studentID }}">
+                    </td>
+                </tr>
+                {% comment %} <p> {{ enrollment.student.studentID }} - {{ attendances|get_item:enrollment.student.studentID }}</p> {% endcomment %}
                 {% endfor %}
+
             </tbody>
         </table>
-        <button type="submit" class="btn btn-primary">Update Grades</button>
+        <button type="submit" class="btn btn-primary">Save Attendance</button>
     </form>
+</div>
 {% endblock %}
 
 {% block script %}
 <script>
+    $('#datePicker').change(function() {
+        var section_id = $('#sectionID').text();
+        var selectedDate = $(this).val();
+        console.log("Selected Date:", selectedDate); // Debugging line
+        window.location.href = "/attendance/" + section_id + "?date=" + selectedDate;
+    });
     $(document).ready(function() {
-        $('#gradeTable').DataTable({
-            responsive: true,
+        if (window.location.search) {
+            var selectedDate = window.location.search.split('=')[1];
+            $('#datePicker').val(selectedDate);
         }
+        else {
+            var today = new Date();
+            var dd = today.getDate();
+            var mm = today.getMonth()+1; //January is 0!
+            var yyyy = today.getFullYear();
 
-        $('#gradebookForm').submit(function(event) {
-            event.preventDefault(); // Prevent the form from submitting via the browser
+            if(dd < 10) {
+                dd = '0' + dd;
+            }
+
+            if(mm < 10) {
+                mm = '0' + mm;
+            }
+
+            today = yyyy + '-' + mm + '-' + dd;
+            window.location.href = "/attendance/" + $('#sectionID').text() + "?date=" + today;
+        }
+        $('#attendanceTable').DataTable();
+
+        $('form').on('submit', function(e) {
+            e.preventDefault();
             var formData = $(this).serialize();
-
             $.ajax({
-                url: $(this).attr('action'),
                 type: 'POST',
+                url: $(this).attr('action'),
                 data: formData,
                 success: function(response) {
                     if (response.status === 'success') {
-                        window.location.href = response.redirect_url;
+                        //alert('Attendance updated successfully');
+                        location.reload();  // Reload the page to see updated attendance
                     } else {
-                        // Handle errors
-                        alert('Error updating grades');
+                        alert('Error updating attendance');
                     }
                 }
             });
@@ -59,5 +90,3 @@
     });
 </script>
 {% endblock %}
-
-

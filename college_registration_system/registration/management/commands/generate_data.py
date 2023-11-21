@@ -3,7 +3,7 @@ import uuid
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from faker import Faker
-from registration.models import Building, Department, Room, Semester,CoursePrereq, Timeslot, User, Student, Faculty, Course, CourseSection, Enrollment, Major, Faculty_FullTime, Faculty_PartTime, Grad_Part_Time, Grad_Full_Time, Undergrad_Part_Time, Undergrad_Full_Time, Graduate, Undergraduate
+from registration.models import Building, Department, Room, Semester,CoursePrereq, Timeslot, User, Student, Faculty, Course, CourseSection, Enrollment, Major, Faculty_FullTime, Faculty_PartTime, Grad_Part_Time, Grad_Full_Time, Undergrad_Part_Time, Undergrad_Full_Time, Graduate, Undergraduate,Major,Minor,MajorDegreeRequirements,MinorDegreeRequirements
 import datetime as dt
 from collections import defaultdict
 class Command(BaseCommand):
@@ -17,6 +17,7 @@ class Command(BaseCommand):
         self.stdout.write("4: Generate courses and sections")
         self.stdout.write("5: Generate enrollments")
         self.stdout.write("6: Remove underfilled sections")
+        self.stdout.write("7: Generate major and minor requirements")
 
         choice = input("Enter your choice (1-6): ")
 
@@ -38,6 +39,8 @@ class Command(BaseCommand):
             self.enroll_students(fake)
         elif choice == '6':
             self.remove_underfilled_sections(fake)
+        elif choice == '7':
+            self.create_major_minor_requirements(fake)
         else:
             self.stdout.write("Invalid choice.")
 
@@ -53,96 +56,96 @@ class Command(BaseCommand):
                     print(f'Room {room} in {building} already exists')
 
     def create_users(self, fake):
-        for _ in range(200):
+        # for _ in range(200):
 
-            user = User.objects.create(
-                id=uuid.uuid4(),
-                first_name=fake.first_name(),
-                last_name=fake.last_name(),
-                gender=random.choice(['M', 'F']),
-                dob=fake.date_of_birth(),
-                street=fake.street_address(),
-                city=fake.city(),
-                state=fake.state(),
-                zip_code=fake.zipcode(),
-                user_type='Student'
-            )
-            user.save()
-            s=Student.objects.get(user=user)
-            s.student_type=random.choice(['Undergraduate', 'Graduate'])
-            s.major_id=Major.objects.order_by('?').first()
-            s.enrollment_year=fake.random_int(min=2015, max=2020)
-            # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
-            s.save()
-            print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
+        #     user = User.objects.create(
+        #         id=uuid.uuid4(),
+        #         first_name=fake.first_name(),
+        #         last_name=fake.last_name(),
+        #         gender=random.choice(['M', 'F']),
+        #         dob=fake.date_of_birth(),
+        #         street=fake.street_address(),
+        #         city=fake.city(),
+        #         state=fake.state(),
+        #         zip_code=fake.zipcode(),
+        #         user_type='Student'
+        #     )
+        #     user.save()
+        #     s=Student.objects.get(user=user)
+        #     s.student_type=random.choice(['Undergraduate', 'Graduate'])
+        #     s.major_id=Major.objects.order_by('?').first()
+        #     s.enrollment_year=fake.random_int(min=2015, max=2020)
+        #     # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
+        #     s.save()
+        #     print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
 
-        for _ in range(50):
-            user = User.objects.create(
-                id=uuid.uuid4(),
-                first_name=fake.first_name(),
-                last_name=fake.last_name(),
-                gender=random.choice(['M', 'F']),
-                dob=fake.date_of_birth(),
-                street=fake.street_address(),
-                city=fake.city(),
-                state=fake.state(),
-                zip_code=fake.zipcode(),
-                user_type='Faculty'
-            )
-            user.save()
-            f=Faculty.objects.get_or_create(
-            user=user,
-            fac_type=random.choice(['FullTime', 'PartTime']),
-            specialty=fake.job(),
-            rank=random.choice(['Professor', 'Assistant Professor', 'Adjunct Professor', 'Teaching Assistant']),
+        # for _ in range(50):
+        #     user = User.objects.create(
+        #         id=uuid.uuid4(),
+        #         first_name=fake.first_name(),
+        #         last_name=fake.last_name(),
+        #         gender=random.choice(['M', 'F']),
+        #         dob=fake.date_of_birth(),
+        #         street=fake.street_address(),
+        #         city=fake.city(),
+        #         state=fake.state(),
+        #         zip_code=fake.zipcode(),
+        #         user_type='Faculty'
+        #     )
+        #     user.save()
+        #     f=Faculty.objects.get_or_create(
+        #     user=user,
+        #     fac_type=random.choice(['FullTime', 'PartTime']),
+        #     specialty=fake.job(),
+        #     rank=random.choice(['Professor', 'Assistant Professor', 'Adjunct Professor', 'Teaching Assistant']),
 
-            )[0]
-            f.departments.add(Department.objects.order_by('?').first())
-            f.save()
+        #     )[0]
+        #     f.departments.add(Department.objects.order_by('?').first())
+        #     f.save()
 
-            print(f'Created faculty {user.first_name} {user.last_name} with type {f.fac_type} and rank {f.rank}')
-        for undergrads in Undergraduate.objects.all():
-            undergrads.undergrad_student_type = random.choice(['FullTime', 'PartTime'])
-            undergrads.department = Student.objects.get(user=undergrads.student.user).major_id.department
-            print(f"Undergrad {undergrads.student.user.first_name} {undergrads.student.user.last_name} is in department {undergrads.department}")
-            undergrads.save()
-        for grads in Graduate.objects.all():
-            grads.grad_student_type = random.choice(['FullTime', 'PartTime'])
-            grads.department = Student.objects.get(user=grads.student.user).major_id.department
-            print(f"Grad {grads.student.user.first_name} {grads.student.user.last_name} is in department {grads.department}")
-            grads.save()
-        for fulltimes in Grad_Full_Time.objects.all():
-            fulltimes.credits_earned = fake.random_int(min=0, max=30)
-            fulltimes.qualifying_exam = random.choice([True, False])
-            fulltimes.thesis = random.choice([True, False])
-            fulltimes.year = fake.random_int(min=2015, max=2020)
-            print(f"Fulltime Grad {fulltimes.student.student.user.first_name} {fulltimes.student.student.user.last_name} is in year {fulltimes.year}")
-            fulltimes.save()
-        for parttimes in Grad_Part_Time.objects.all():
-            parttimes.credits_earned = fake.random_int(min=0, max=30)
-            parttimes.qualifying_exam = random.choice([True, False])
-            parttimes.thesis = random.choice([True, False])
-            parttimes.year = fake.random_int(min=2015, max=2020)
-            print(f"Parttime Grad {parttimes.student.student.user.first_name} {parttimes.student.student.user.last_name} is in year {parttimes.year}")
-            parttimes.save()
-        for fulltimes in Undergrad_Full_Time.objects.all():
-            fulltimes.creds_earned = fake.random_int(min=0, max=30)
-            fulltimes.standing = random.choice(['Freshman', 'Sophomore', 'Junior', 'Senior'])
-            print(f"Fulltime Undergrad {fulltimes.student.student.user.first_name} {fulltimes.student.student.user.last_name} is in year {fulltimes.standing}")
-            fulltimes.save()
-        for parttimes in Undergrad_Part_Time.objects.all():
-            parttimes.creds_earned = fake.random_int(min=0, max=30)
-            parttimes.standing = random.choice(['Freshman', 'Sophomore', 'Junior', 'Senior'])
-            print(f"Parttime Undergrad {parttimes.student.student.user.first_name} {parttimes.student.student.user.last_name} is in year {parttimes.standing}")
-            parttimes.save()
+        #     print(f'Created faculty {user.first_name} {user.last_name} with type {f.fac_type} and rank {f.rank}')
+        # for undergrads in Undergraduate.objects.all():
+        #     undergrads.undergrad_student_type = random.choice(['FullTime', 'PartTime'])
+        #     undergrads.department = Student.objects.get(user=undergrads.student.user).major_id.department
+        #     print(f"Undergrad {undergrads.student.user.first_name} {undergrads.student.user.last_name} is in department {undergrads.department}")
+        #     undergrads.save()
+        # for grads in Graduate.objects.all():
+        #     grads.grad_student_type = random.choice(['FullTime', 'PartTime'])
+        #     grads.department = Student.objects.get(user=grads.student.user).major_id.department
+        #     print(f"Grad {grads.student.user.first_name} {grads.student.user.last_name} is in department {grads.department}")
+        #     grads.save()
+        # for fulltimes in Grad_Full_Time.objects.all():
+        #     fulltimes.credits_earned = fake.random_int(min=0, max=30)
+        #     fulltimes.qualifying_exam = random.choice([True, False])
+        #     fulltimes.thesis = random.choice([True, False])
+        #     fulltimes.year = fake.random_int(min=2015, max=2020)
+        #     print(f"Fulltime Grad {fulltimes.student.student.user.first_name} {fulltimes.student.student.user.last_name} is in year {fulltimes.year}")
+        #     fulltimes.save()
+        # for parttimes in Grad_Part_Time.objects.all():
+        #     parttimes.credits_earned = fake.random_int(min=0, max=30)
+        #     parttimes.qualifying_exam = random.choice([True, False])
+        #     parttimes.thesis = random.choice([True, False])
+        #     parttimes.year = fake.random_int(min=2015, max=2020)
+        #     print(f"Parttime Grad {parttimes.student.student.user.first_name} {parttimes.student.student.user.last_name} is in year {parttimes.year}")
+        #     parttimes.save()
+        # for fulltimes in Undergrad_Full_Time.objects.all():
+        #     fulltimes.creds_earned = fake.random_int(min=0, max=30)
+        #     fulltimes.standing = random.choice(['Freshman', 'Sophomore', 'Junior', 'Senior'])
+        #     print(f"Fulltime Undergrad {fulltimes.student.student.user.first_name} {fulltimes.student.student.user.last_name} is in year {fulltimes.standing}")
+        #     fulltimes.save()
+        # for parttimes in Undergrad_Part_Time.objects.all():
+        #     parttimes.creds_earned = fake.random_int(min=0, max=30)
+        #     parttimes.standing = random.choice(['Freshman', 'Sophomore', 'Junior', 'Senior'])
+        #     print(f"Parttime Undergrad {parttimes.student.student.user.first_name} {parttimes.student.student.user.last_name} is in year {parttimes.standing}")
+        #     parttimes.save()
         #give all faculty a room. faculty_fulltime and faculty_parttime hold the room attribute
         for fulltimes in Faculty_FullTime.objects.all():
-            fulltimes.room = random.choice(Room.objects.all())
-            print(f"Fulltime Faculty {fulltimes.faculty.user.first_name} {fulltimes.faculty.user.last_name} is in room {fulltimes.room}")
+            fulltimes.office = random.choice(Room.objects.all())
+            print(f"Fulltime Faculty {fulltimes.faculty.user.first_name} {fulltimes.faculty.user.last_name} is in room {fulltimes.office}")
             fulltimes.save()
         for parttimes in Faculty_PartTime.objects.all():
-            parttimes.room = random.choice(Room.objects.all())
-            print(f"Parttime Faculty {parttimes.faculty.user.first_name} {parttimes.faculty.user.last_name} is in room {parttimes.room}")
+            parttimes.office = random.choice(Room.objects.all())
+            print(f"Parttime Faculty {parttimes.faculty.user.first_name} {parttimes.faculty.user.last_name} is in room {parttimes.office}")
             parttimes.save()
 
     def create_courses_and_sections(self, fake):
@@ -247,3 +250,58 @@ class Command(BaseCommand):
                 print(f'Removing section {section}')
                 section.delete()
 
+    def create_major_minor_requirements(self,fake):
+        # add all courses in major to major requirements. each major has one major requirements with a many-to-many field for courses
+        for major in Major.objects.all():
+            major_requirements = MajorDegreeRequirements.objects.create(
+                major=major,
+                credits_required=120
+            )
+            #add all courses with major name in course name to major requirements
+            for course in Course.objects.filter(course_name__contains=major.major_name):
+                major_requirements.courses.add(course)
+            major_requirements.save()
+        #add all courses in minor to minor requirements. each minor has one minor requirements with a many-to-many field for courses
+        for minor in Minor.objects.all():
+            minor_requirements = MinorDegreeRequirements.objects.create(
+                minor=minor,
+                credits_required=60
+            )
+            #add all courses with minor name in course name to minor requirements
+            for course in Course.objects.filter(course_name__contains=minor.minor_name):
+                minor_requirements.courses.add(course)
+            minor_requirements.save()
+
+        #all requirements should have intro to: english, math, science, and social science and concepts of english, math, science, and social science as prereqs. Some will have intro to chemistry and intro to biology as prereqs
+        for major in Major.objects.all():
+            major_requirements = MajorDegreeRequirements.objects.get(major=major)
+            #add intro to english, math, science, and social science
+            major_requirements.courses.add(Course.objects.get(course_name=f'Intro to English'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Intro to Math'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Intro to Science'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Intro to History'))
+            #add concepts of english, math, science, and social science
+            major_requirements.courses.add(Course.objects.get(course_name=f'Concepts of English'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Concepts of Math'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Concepts of Science'))
+            major_requirements.courses.add(Course.objects.get(course_name=f'Concepts of History'))
+            #add intro to chemistry and intro to biology if major is biology or chemistry
+            if fake.random_int(min=0,max=1) == 1:
+                major_requirements.courses.add(Course.objects.get(course_name=f'Intro to Chemistry'))
+            else:
+                major_requirements.courses.add(Course.objects.get(course_name=f'Intro to Biology'))
+            major_requirements.save()
+
+        for minor in Minor.objects.all():
+            minor_requirements = MinorDegreeRequirements.objects.get(minor=minor)
+            #add intro to english, math, science, and social science
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Intro to English'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Intro to Math'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Intro to Science'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Intro to History'))
+            #add concepts of english, math, science, and social science
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of English'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of Math'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of Science'))
+            minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of History'))
+            minor_requirements.save()

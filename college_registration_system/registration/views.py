@@ -6,8 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import transaction
+from django.db.models import Sum
 from .forms import UserCompositeForm
-from .models import CoursePrereq,Attendance, Semester,Hold, CourseSection,Department, Course,Login,Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime, Faculty_PartTime, Graduate, Undergraduate, Major
+from .models import (
+    CoursePrereq,Attendance, Semester,Hold, CourseSection,Department, Course,Login,
+    Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime,
+    Faculty_PartTime, Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,
+    Undergrad_Part_Time, Undergraduate, Major,Minor, MajorDegreeRequirements,MinorDegreeRequirements
+)
 from django.contrib import messages
 import requests
 import json
@@ -543,6 +549,54 @@ def drop_course(request,section_id):
         messages.error(request, f'An error occurred while dropping {section}.\n{e}',extra_tags='Error')
     return redirect('/enrollment/')
 
+@login_required(login_url='user_login')
+def degreeAudit_view(request):
+    if not request.user.user.user_type == 'Student':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+
+    student = Student.objects.get(user=request.user.user)
+    context = {
+        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'student': student,
+    }
+
+    # Adding Undergraduate or Graduate information
+    if student.student_type == 'Undergraduate':
+        context['undergrad_info'] = Undergraduate.objects.get(student=student)
+    elif student.student_type == 'Graduate':
+        context['grad_info'] = Graduate.objects.get(student=student)
+
+    # Major and Minor Degree Requirements
+    if student.major_id:
+        major_reqs = MajorDegreeRequirements.objects.get(major=student.major_id)
+        context['major_reqs'] = major_reqs
+    if student.minor_id:
+        minor_reqs = MinorDegreeRequirements.objects.get(minor=student.minor_id)
+        context['minor_reqs'] = minor_reqs
+    #get courses from course sections in studenthistory
+    context['completed_courses'] = StudentHistory.objects.filter(student=student)
+    context['completed_courses'] = [course.section.course for course in context['completed_courses']]
+    print("Completed Courses:", context['completed_courses'])
+
+    # Calculate credits
+    context['completed_credits'], context['inprogress_credits'] = calculate_credits(student)
+
+    return render(request, 'degreeAudit.html', context)
+
+def calculate_credits(student):
+    completed_credits = 0
+    inprogress_credits = 0
+    enrollments = StudentHistory.objects.filter(student=student)
+    for enrollment in enrollments:
+        course_credits = enrollment.section.course.no_of_credits
+        if enrollment.grade and enrollment.grade not in ['F', 'NA']:
+            completed_credits += course_credits
+        elif enrollment.grade == 'NA':
+            inprogress_credits += course_credits
+    return completed_credits, inprogress_credits
+
 #endregion
 #region admin
 #### ADMIN VIEWS ####
@@ -780,13 +834,15 @@ def update_attendance(request, section_id):
             section = CourseSection.objects.get(crn=section_id)
             # course = section.course
             #find attendance object with student, section, course, and date_of_class, if it exists, delete it
-            attendance, created = Attendance.objects.get(
-                student=student,
-                section=section,
-                # course=course,
-                date_of_class=date_of_class
-            ).delete()
-
+            try:
+                attendance, created = Attendance.objects.get(
+                    student=student,
+                    section=section,
+                    # course=course,
+                    date_of_class=date_of_class
+                ).delete()
+            except:
+                pass
             attendance, created = Attendance.objects.get_or_create(
                 student=student,
                 section=section,
@@ -796,7 +852,7 @@ def update_attendance(request, section_id):
             )
             attendance.save()
 
-        messages.success(request, 'Attendance updated successfully.')
+        messages.success(request, 'Attendance updated successfully.',extra_tags='Success')
         return JsonResponse({'status': 'success','redirect_url': '/attendance/'+str(section_id)})
 
     else:

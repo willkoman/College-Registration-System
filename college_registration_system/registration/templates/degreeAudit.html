@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load custom_filters %}
+{% block content %}
+<div class="container mt-5">
+    <div style="text-align: center;">
+        <h2>Degree Audit for {{ student.user.first_name }} {{ student.user.last_name }}</h2>
+    </div>
+    <!-- Major Progress -->
+    {% if major_reqs %}
+    {% comment %} center text {% endcomment %}
+    <div style="text-align: center;">
+        <h3>Major Progress: {{ major_reqs.major.major_name }}</h3>
+        <div class="progress mb-1">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ completed_credits|percentage_of:major_reqs.credits_required }}%;" aria-valuenow="{{ completed_credits }}" aria-valuemin="0" aria-valuemax="{{ major_reqs.credits_required }}">
+                <span class="sr-only">{{ completed_credits|percentage_of:major_reqs.credits_required }}% Complete</span>
+            </div>
+        </div>
+        <p>{{ completed_credits|percentage_of:major_reqs.credits_required }}% Completed</p>
+    </div>
+    {% endif %}
+
+    <!-- Minor Progress -->
+    {% if minor_reqs %}
+    <div style="text-align: center;">
+        <h3>Minor Progress: {{ minor_reqs.minor.minor_name }}</h3>
+        <div class="progress mb-3">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ completed_credits|percentage_of:minor_reqs.credits_required }}%;" aria-valuenow="{{ completed_credits }}" aria-valuemin="0" aria-valuemax="{{ minor_reqs.credits_required }}">
+                <span class="sr-only">{{ completed_credits|percentage_of:minor_reqs.credits_required }}% Complete</span>
+            </div>
+        </div>
+        <p>{{ completed_credits|percentage_of:minor_reqs.credits_required }}% Completed</p>
+    </div>
+    {% endif %}
+
+    <!-- Major Requirements -->
+    {% if major_reqs %}
+    <h4>Major Requirements</h4>
+    <p>Credits Required: {{ major_reqs.credits_required }}</p>
+    <p>Credits Completed: {{ completed_credits }}</p>
+    <table class="table" id="majorTable">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Credits</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in major_reqs.courses.all %}
+            <tr>
+                <td>{{ course.course_name }}</td>
+                <td>{{ course.no_of_credits }}</td>
+                <td>{% if course in completed_courses %}Completed{% elif course in inprogress_courses %}In Progress{% else %}Not Started{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <!-- Minor Requirements -->
+    {% if minor_reqs %}
+    <h4>Minor Requirements</h4>
+    <p>Credits Required: {{ minor_reqs.credits_required }}</p>
+    <p>Credits Completed: {{ completed_credits }}</p>
+    <table class="table" id="minorTable">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Credits</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in minor_reqs.courses.all %}
+            <tr>
+                <td>{{ course.course_name }}</td>
+                <td>{{ course.no_of_credits }}</td>
+                <td>{% if course.id in completed_courses %}Completed{% elif course.id in inprogress_courses %}In Progress{% else %}Not Started{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#majorTable').DataTable({
+            responsive: true,
+            paging: false,
+            searching: false,
+            info: false,
+        });
+        $('#minorTable').DataTable({
+            responsive: true,
+            paging: false,
+            searching: false,
+            info: false,
+        });
+    });
+</script>
+{% endblock %}
+

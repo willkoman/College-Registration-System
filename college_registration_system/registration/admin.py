@@ -4,7 +4,7 @@ from .models import (
     Graduate, Grad_Full_Time, Grad_Part_Time, Faculty, Faculty_FullTime, Faculty_PartTime,
     StatisticsOffice, Department, Building, Room, Lab, Lecture, Semester, CourseSection,
     Course, CoursePrereq, Enrollment, StudentHistory, FacultyHistory, Attendance, Hold,
-    Timeslot, Day, Period, Major, Minor
+    Timeslot, Day, Period, Major, Minor, MajorDegreeRequirements, MinorDegreeRequirements
 )
 
 from django.contrib.auth.hashers import make_password
@@ -60,6 +60,8 @@ admin.site.register(Hold)
 admin.site.register(Timeslot)
 admin.site.register(Major)
 admin.site.register(Minor)
+admin.site.register(MajorDegreeRequirements)
+admin.site.register(MinorDegreeRequirements)
 # admin.site.register(TimeSlotDay)
 # admin.site.register(TimeSlotPeriod)
 admin.site.register(Day)

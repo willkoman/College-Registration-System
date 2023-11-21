@@ -61,4 +61,6 @@ urlpatterns = [
     path('update_attendance/<int:section_id>', views.update_attendance, name='update_attendance'),
     path('update_gradebook/', views.update_gradebook, name='update_gradebook'),
 
+    path('degreeAudit/', views.degreeAudit_view, name='degreeAudit_view'),
+
 ]

@@ -688,3 +688,19 @@ class Period(models.Model):
 
     def __str__(self):
         return str(self.start_time)+' - '+str(self.end_time)
+
+class MajorDegreeRequirements(models.Model):
+    major = models.ForeignKey(Major, on_delete=models.CASCADE)
+    courses = models.ManyToManyField(Course,blank=True, related_name='major_courses')
+    credits_required = models.IntegerField()
+
+    def __str__(self):
+        return self.major.major_name
+
+class MinorDegreeRequirements(models.Model):
+    minor = models.ForeignKey(Minor, on_delete=models.CASCADE)
+    courses = models.ManyToManyField(Course, blank=True, related_name='minor_courses')
+    credits_required = models.IntegerField()
+
+    def __str__(self):
+        return self.minor.minor_name

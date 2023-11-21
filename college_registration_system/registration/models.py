@@ -323,7 +323,7 @@ class Faculty(models.Model):
     rank = models.CharField(max_length=24, choices=RANK_CHOICES)
     #can be multiple departments. Should be a foreign key list
     departments = models.ManyToManyField('Department')
-    specialty = models.CharField(max_length=50)
+    specialty = models.CharField(max_length=50, null=True, blank=True)
     FAC_TYPE_CHOICES = [
         ('FullTime', 'Full-Time'),
         ('PartTime', 'Part-Time'),
@@ -488,17 +488,20 @@ def create_faculty_history(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=CourseSection)
 def delete_faculty_history(sender, instance, **kwargs):
-    fh = FacultyHistory.objects.filter(
-        faculty=instance.faculty,
-        section=instance,
-        semester=instance.semester
-    )
-    fh.delete()
+    try:
+        fh = FacultyHistory.objects.filter(
+            faculty=instance.faculty,
+            section=instance,
+            semester=instance.semester
+        )
+        fh.delete()
 
-    if instance.faculty.fac_type == 'FullTime':
-        Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
-    else:
-        Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
+        if instance.faculty.fac_type == 'FullTime':
+            Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
+        else:
+            Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')-1)
+    except:
+        pass
 # Course Model
 class Course(models.Model):
     COURSE_TYPE_CHOICES = [
@@ -514,7 +517,7 @@ class Course(models.Model):
     course_type = models.CharField(max_length=10, choices=COURSE_TYPE_CHOICES)
 
     def __str__(self):
-        return self.department.department_id+str(self.course_number)+": "+ self.course_name
+        return self.course_name
 # CoursePrereq Model
 class CoursePrereq(models.Model):
     course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)
@@ -540,7 +543,7 @@ def create_student_history(sender, instance, created, **kwargs):
         StudentHistory.objects.create(
             student=instance.student,
             section=instance.section,
-            course=instance.section.course,
+            # course=instance.section.course,
             semester=instance.section.semester,
             grade=instance.grade
         )
@@ -548,7 +551,7 @@ def create_student_history(sender, instance, created, **kwargs):
         StudentHistory.objects.filter(
             student=instance.student,
             section=instance.section,
-            course=instance.section.course,
+            # course=instance.section.course,
             semester=instance.section.semester
         ).update(grade=instance.grade)
 
@@ -558,7 +561,7 @@ def delete_student_history(sender, instance, **kwargs):
     sh = StudentHistory.objects.filter(
         student=instance.student,
         section=instance.section,
-        course=instance.section.course,
+        # course=instance.section.course,
         semester=instance.section.semester
     )
     if instance.grade == 'NA' or instance.grade == None:
@@ -571,7 +574,7 @@ def delete_student_history(sender, instance, **kwargs):
 class StudentHistory(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    # course = models.ForeignKey(Course, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     grade = models.CharField(max_length=2)
 
@@ -601,7 +604,7 @@ class FacultyHistory(models.Model):
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    # course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_of_class = models.DateField()
     present = models.BooleanField()
 

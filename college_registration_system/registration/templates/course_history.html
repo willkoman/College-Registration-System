@@ -30,8 +30,8 @@
     <ul>
         {% for course in course_history %}
             <li>
-                <strong>Course:</strong> {{ course.course.course_name }}<br>
-                <strong>Department:</strong> {{ course.course.department }}<br>
+                <strong>Course:</strong> {{ course.section.course.course_name }}<br>
+                <strong>Department:</strong> {{ course.section.course.department }}<br>
                 <strong>Grade:</strong> {{ course.grade }}<br>
             </li>
             <hr>

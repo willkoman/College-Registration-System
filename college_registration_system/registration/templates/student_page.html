@@ -30,14 +30,14 @@
             <h2>Your Registered Sessions</h2>
             <ul>
                 {% for registration in enrollment %}
-                    <li>{{ registration.section.course }} - {{ registration.section.department }}</li>
+                    <li>{{ registration.section.course }} - {{registration.grade}}</li>
                 {% endfor %}
             </ul>
 
             <h2>Your Total Course History</h2>
             <ul>
                 {% for course in student_history %}
-                    <li>{{ course.course }} - {{ course.department }} {{course.grade}}</li>
+                    <li>{{ course.section.course }} - {{course.grade}}</li>
                 {% endfor %}
             </ul>
 

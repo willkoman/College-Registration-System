@@ -739,6 +739,9 @@ def parse_date(date_str):
 
 @login_required(login_url='user_login')
 def attendance_view(request, section_id):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
     section = CourseSection.objects.get(crn=section_id)
     date_str = request.GET.get('date')
     date = parse_date(date_str) if date_str else None
@@ -764,6 +767,9 @@ def attendance_view(request, section_id):
     return render(request, 'faculty/attendance.html', context)
 @login_required(login_url='user_login')
 def update_attendance(request, section_id):
+    if not request.user.user.user_type == 'Faculty':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
     if request.method == 'POST':
         date_of_class = request.POST.get('date_of_class')
         attendances = request.POST.getlist('attendances[]')
@@ -772,19 +778,19 @@ def update_attendance(request, section_id):
             present_value = f'present_{student_id}' in request.POST
             student = Student.objects.get(studentID=student_id)
             section = CourseSection.objects.get(crn=section_id)
-            course = section.course
+            # course = section.course
             #find attendance object with student, section, course, and date_of_class, if it exists, delete it
             attendance, created = Attendance.objects.get(
                 student=student,
                 section=section,
-                course=course,
+                # course=course,
                 date_of_class=date_of_class
             ).delete()
 
             attendance, created = Attendance.objects.get_or_create(
                 student=student,
                 section=section,
-                course=course,
+                # course=course,
                 present=present_value,
                 date_of_class=date_of_class
             )

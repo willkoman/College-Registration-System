@@ -58,7 +58,7 @@
                     <button class="btn btn-primary view-btn" data-student-id="{{ student.student.studentID }}">View History</button>
                     <div class="student-history d-none">
                     {% for course in student.course_history.all %}
-                        <span class="history-item" data-course="{{ course.course }}" data-grade="{{ course.grade }}" data-semester="{{ course.semester }}"></span>
+                        <span class="history-item" data-course="{{ course.section.course }}" data-grade="{{ course.grade }}" data-semester="{{ course.semester }}"></span>
                     {% endfor %}
                     </div>
                 </td>
@@ -91,7 +91,7 @@
                     <tbody>
                         {% for course in student.course_history.all %}
                         <tr>
-                            <td>{{ course.course }}</td>
+                            <td>{{ course.section.course }}</td>
                             <td>{{ course.grade }}</td>
                             <td>{{ course.semester }}</td>
                         </tr>

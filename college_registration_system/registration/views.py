@@ -695,6 +695,44 @@ def update_user(request):
     return JsonResponse({'status': 'method not allowed'}, status=405)
 
 @login_required(login_url='user_login')
+def add_user(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+    if request.method == 'POST':
+        form = UserCompositeForm(request.POST)
+        if form.is_valid():
+            user_instance = form.save()
+            user_type = form.cleaned_data.get('user_type')
+
+            if user_type == 'Student':
+                student, created = Student.objects.get_or_create(user=user_instance)
+                student.studentID = form.cleaned_data.get('studentID')
+                student.major_id = form.cleaned_data.get('major_id')
+                student.minor_id = form.cleaned_data.get('minor_id')
+                student.enrollment_year = form.cleaned_data.get('enrollment_year')
+                student.student_type = form.cleaned_data.get('student_type')
+                student.save()
+            elif user_type == 'Faculty':
+                faculty, created = Faculty.objects.get_or_create(user=user_instance)
+                faculty.rank = form.cleaned_data.get('rank')
+                faculty.departments.set(form.cleaned_data.get('departments'))
+                faculty.specialty = form.cleaned_data.get('specialty')
+                faculty.fac_type = form.cleaned_data.get('fac_type')
+                faculty.save()
+            elif user_type == 'Admin':
+                admin, created = Admin.objects.get_or_create(user=user_instance)
+                admin.access_level = form.cleaned_data.get('access_level')
+                admin.save()
+
+            messages.success(request, 'User added successfully.')
+            return JsonResponse({'status': 'success', 'redirect_url': '/admin/users/'})
+        else:
+            messages.error(request, 'Error: User could not be added.')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    else:
+        return JsonResponse({'status': 'method not allowed'}, status=405)
+@login_required(login_url='user_login')
 def admin_course_view(request):
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,

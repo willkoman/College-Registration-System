@@ -10,7 +10,7 @@
         {% csrf_token %}
         <div class="form-group">
             <label for="datePicker">Select Date:</label>
-            <input id="datePicker" type="date" name="date_of_class" value="">
+            <input id="datePicker" type="date" name="date_of_class" value="" max="{{ today }}">
         </div>
 
         <table class="table table-bordered" id="attendanceTable">

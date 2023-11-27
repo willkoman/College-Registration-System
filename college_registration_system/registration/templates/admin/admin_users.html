@@ -42,9 +42,139 @@
         {% endfor %}
     </tbody>
 </table>
+<!-- Add Modal -->
+<!-- Add User Modal -->
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">Add User</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm" method="post" action="{% url 'add_user' %}">
+                    {% csrf_token %}
 
-<!-- Modal -->
-<div class="modal fade" id="userEditModal" tabindex="-1" role="dialog" aria-labelledby="userEditModalLabel" aria-hidden="true">
+                    <!-- Common Fields -->
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">Email</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.gender.id_for_label }}">Gender</label>
+                        {{ form.gender }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.dob.id_for_label }}">Date of Birth</label>
+                        {{ form.dob }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.street.id_for_label }}">Street</label>
+                        {{ form.street }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.city.id_for_label }}">City</label>
+                        {{ form.city }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.state.id_for_label }}">State</label>
+                        {{ form.state }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.zip_code.id_for_label }}">Zip Code</label>
+                        {{ form.zip_code }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.no_of_attempts.id_for_label }}">Number of Attempts</label>
+                        {{ form.no_of_attempts }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.is_locked.id_for_label }}">Is Locked</label>
+                        {{ form.is_locked }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.user_type.id_for_label }}">User Type</label>
+                        {{ form.user_type }}
+                    </div>
+
+                    <!-- Student-specific Fields -->
+                    <div id="studentFieldsAdd" class="user-type-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.studentID.id_for_label }}">Student ID</label>
+                            {{ form.studentID }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.major_id.id_for_label }}">Major</label>
+                            {{ form.major_id }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.minor_id.id_for_label }}">Minor</label>
+                            {{ form.minor_id }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.enrollment_year.id_for_label }}">Enrollment Year</label>
+                            {{ form.enrollment_year }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.student_type.id_for_label }}">Student Type</label>
+                            {{ form.student_type }}
+                        </div>
+                    </div>
+
+                    <!-- Faculty-specific Fields -->
+                    <div id="facultyFieldsAdd" class="user-type-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.rank.id_for_label }}">Rank</label>
+                            {{ form.rank }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.departments.id_for_label }}">Departments</label>
+                            {{ form.departments }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.specialty.id_for_label }}">Specialty</label>
+                            {{ form.specialty }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.fac_type.id_for_label }}">Faculty Type</label>
+                            {{ form.fac_type }}
+                        </div>
+                    </div>
+
+                    <!-- Admin-specific Fields -->
+                    <div id="adminFieldsAdd" class="user-type-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.access_level.id_for_label }}">Access Level</label>
+                            {{ form.access_level }}
+                        </div>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary">Save user</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="userEditModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -56,25 +186,26 @@
             <div class="modal-body">
                 <form id="editUserForm" method="post" action="{% url 'update_user' %}">
                     {% csrf_token %}
-
+                    <input type="hidden" id="editUserId" name="user_id" value="">
+                    <input type="hidden" id="editUserType" name="user_type" value="">
                     <!-- Common Fields -->
                     <!-- These fields are always shown -->
 
                     <!-- Student-specific Fields -->
-                    <div id="studentFields" class="user-type-fields" style="display: none;">
+                    <div id="studentFieldsEdit" class="user-type-fields" style="display: none;">
                         <!-- Render student fields here -->
                         <p>Student Fields</p>
 
                     </div>
 
                     <!-- Faculty-specific Fields -->
-                    <div id="facultyFields" class="user-type-fields" style="display: none;">
+                    <div id="facultyFieldsEdit" class="user-type-fields" style="display: none;">
                         <!-- Render faculty fields here -->
                         <p>Faculty Fields</p>
                     </div>
 
                     <!-- Admin-specific Fields -->
-                    <div id="adminFields" class="user-type-fields" style="display: none;">
+                    <div id="adminFieldsEdit" class="user-type-fields" style="display: none;">
                         <!-- Render admin fields here -->
                         <p>Admin Fields</p>
                     </div>
@@ -85,7 +216,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveUserBtn">Save changes</button>
+                {% comment %} <button type="submit" class="btn btn-primary">Save Changes</button> {% endcomment %}
                 {% csrf_token %}
             </div>
         </div>
@@ -97,77 +228,92 @@
 {% block script %}
 <script>
     $(document).ready(function () {
-        console.log("Script loaded and executing."); // Diagnostic log
-
+        // Initialize DataTables
         $('#userTable').DataTable({responsive: true});
 
-        function toggleUserTypeFields(userType) {
-            // Explicitly hide all user-type fields first
-            $('#studentFields').css('display', 'none');
-            $('#facultyFields').css('display', 'none');
-            $('#adminFields').css('display', 'none');
-
-            // Then show the fields for the selected user type
-            if (userType === 'Student') {
-                $('#studentFields').css('display', 'block');
-            } else if (userType === 'Faculty') {
-                $('#facultyFields').css('display', 'block');
-            } else if (userType === 'Admin') {
-                $('#adminFields').css('display', 'block');
-            }
+        // Function to toggle visibility of user type fields
+        function toggleUserTypeFields(userType, modalId) {
+            var fieldsSuffix = modalId === '#addUserModal' ? 'Add' : 'Edit';
+            $('.user-type-fields').hide(); // Hide all first
+            $('#' + userType.toLowerCase() + 'Fields' + fieldsSuffix).show(); // Show relevant fields
         }
 
-        $(document).on('change', '#id_user_type', function() {
+        // Event listener for user type selection (Add User Modal)
+        $(document).on('change', '#addUserModal #id_user_type', function() {
             var selectedType = $(this).val();
-            console.log("User type changed to:", selectedType); // Diagnostic log
-            toggleUserTypeFields(selectedType);
+            toggleUserTypeFields(selectedType, '#addUserModal');
         });
 
+        // Event listener for user type selection (Edit User Modal)
+        $(document).on('change', '#editUserModal #id_user_type', function() {
+            var selectedType = $(this).val();
+            toggleUserTypeFields(selectedType, '#editUserModal');
+        });
+
+        // Open 'Add User' modal
+        $('#addUserBtn').on('click', function() {
+            var modal = $('#addUserModal');
+            modal.find('.modal-title').text('Add User');
+            modal.find('form')[0].reset(); // Reset form
+            modal.modal('show');
+        });
+
+        // Open 'Edit User' modal and populate data
         $('#userTable').on('click', '.edit-btn', function() {
             var userId = $(this).data('userid');
-            console.log("Edit button clicked for user ID:", userId); // Diagnostic log
-            $('#userEditModal').modal('show');
+            var modal = $('#editUserModal');
+            modal.find('.modal-title').text('Edit User');
 
+            // AJAX call to load user data into the form
             $.ajax({
                 url: "{% url 'get_user_form' %}",
-                data: {'user_id': userId},
-                success: function (data) {
-                    console.log("Form data loaded via AJAX."); // Diagnostic log
-                    $('#editUserForm').html(data);
+                data: { 'user_id': userId },
+                success: function(data) {
+                    modal.find('.modal-body form').html(data);
+                    var userType = modal.find('#id_user_type').val();
+                    toggleUserTypeFields(userType, '#editUserModal');
+
+                    // Ensure user_id is included in the form
                     $('<input>').attr({
                         type: 'hidden',
-                        name: 'csrfmiddlewaretoken',
-                        value: '{{ csrf_token }}'
-                    }).appendTo('#editUserForm');
-                    $('<input>').attr({
-                        type: 'hidden',
+                        id: 'editUserId',
                         name: 'user_id',
                         value: userId
                     }).appendTo('#editUserForm');
-
-                    var currentUserType = $('#id_user_type').val();
-                    console.log("Current user type:", currentUserType); // Diagnostic log
-                    toggleUserTypeFields(currentUserType);
                 }
             });
+            modal.modal('show');
         });
-        // Save button click action
-        $('#saveUserBtn').on('click', function() {
-            var formData = $('#editUserForm').serialize();
+
+        // Function to handle form submission
+        function handleFormSubmission(formId, url) {
+            var formData = $(formId).serialize();
             $.ajax({
-                url: $('#editUserForm').attr('action'),
+                url: url,
                 type: 'POST',
                 data: formData,
                 success: function(response) {
                     if (response.status === 'success') {
-                        window.location.href = response.redirect_url;
+                        window.location.reload(); // Reload the page on success
                     } else {
-                        alert('Error updating user');
+                        alert('Error: ' + response.message); // Display error message
                     }
                 }
             });
+        }
+
+        // Handle 'Add User' form submission
+        $('#addUserModal form').submit(function(event) {
+            event.preventDefault();
+            handleFormSubmission('#addUserModal form', "{% url 'add_user' %}");
+        });
+
+        // Handle 'Edit User' form submission
+        $('#editUserModal form').submit(function(event) {
+            event.preventDefault();
+            handleFormSubmission('#editUserModal form', "{% url 'update_user' %}");
         });
     });
 </script>
-
 {% endblock %}
+

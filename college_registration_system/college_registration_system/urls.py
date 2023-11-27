@@ -54,6 +54,7 @@ urlpatterns = [
     path('admin/courses/', views.admin_course_view, name='admin_course_view'),
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
+    path('add_user/', views.add_user, name='add_user'),
 
     path('gradebook/<int:section_id>/', views.gradebook_view, name='gradebook_view'),
     path('roster/<int:section_id>/', views.roster_view, name='roster_view'),
@@ -62,5 +63,6 @@ urlpatterns = [
     path('update_gradebook/', views.update_gradebook, name='update_gradebook'),
 
     path('degreeAudit/', views.degreeAudit_view, name='degreeAudit_view'),
+
 
 ]

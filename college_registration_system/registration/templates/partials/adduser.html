@@ -1,0 +1,108 @@
+<form id="addUserForm" method="post" action="{% url 'add_user' %}">
+    {% csrf_token %}
+
+    <!-- Common Fields -->
+    <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.first_name.id_for_label }}">First Name</label>
+        {{ form.first_name }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+        {{ form.last_name }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.gender.id_for_label }}">Gender</label>
+        {{ form.gender }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.dob.id_for_label }}">Date of Birth</label>
+        {{ form.dob }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.street.id_for_label }}">Street</label>
+        {{ form.street }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.city.id_for_label }}">City</label>
+        {{ form.city }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.state.id_for_label }}">State</label>
+        {{ form.state }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.zip_code.id_for_label }}">Zip Code</label>
+        {{ form.zip_code }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.no_of_attempts.id_for_label }}">Number of Attempts</label>
+        {{ form.no_of_attempts }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.is_locked.id_for_label }}">Is Locked</label>
+        {{ form.is_locked }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.user_type.id_for_label }}">User Type</label>
+        {{ form.user_type }}
+    </div>
+
+    <!-- Student-specific Fields -->
+    <div id="studentFieldsAdd" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.studentID.id_for_label }}">Student ID</label>
+            {{ form.studentID }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.major_id.id_for_label }}">Major</label>
+            {{ form.major_id }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.minor_id.id_for_label }}">Minor</label>
+            {{ form.minor_id }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.enrollment_year.id_for_label }}">Enrollment Year</label>
+            {{ form.enrollment_year }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.student_type.id_for_label }}">Student Type</label>
+            {{ form.student_type }}
+        </div>
+    </div>
+
+    <!-- Faculty-specific Fields -->
+    <div id="facultyFieldsAdd" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.rank.id_for_label }}">Rank</label>
+            {{ form.rank }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.departments.id_for_label }}">Departments</label>
+            {{ form.departments }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.specialty.id_for_label }}">Specialty</label>
+            {{ form.specialty }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.fac_type.id_for_label }}">Faculty Type</label>
+            {{ form.fac_type }}
+        </div>
+    </div>
+
+    <!-- Admin-specific Fields -->
+    <div id="adminFieldsAdd" class="user-type-fields" style="display: none;">
+        <div class="form-group">
+            <label for="{{ form.access_level.id_for_label }}">Access Level</label>
+            {{ form.access_level }}
+        </div>
+    </div>
+
+    <!-- Submit button -->
+    <button type="submit" class="btn btn-primary">Save user</button>
+</form>

@@ -7,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import transaction
 from django.db.models import Sum
-from .forms import UserCompositeForm
+from .forms import CourseForm, UserCompositeForm
 from .models import (
     CoursePrereq,Attendance, Semester,Hold, CourseSection,Department, Course,Login,
     Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime,
@@ -738,8 +738,69 @@ def admin_course_view(request):
         'username': request.user.user.first_name+' '+request.user.user.last_name,
         'usertype': request.user.user.user_type,
     }
+    context['departments'] = Department.objects.all()
     context['courses'] = Course.objects.all()
     return render(request, 'admin/admin_courses.html', context)
+
+@login_required(login_url='user_login')
+def add_course(request):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    if request.method == 'POST':
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Course {form.cleaned_data.get("course_name")} added successfully.',extra_tags='Success')
+            return JsonResponse({'status': 'success', 'message': 'Course added successfully', 'redirect_url': '/admin/courses/'})
+        else:
+            print(form.errors)
+            messages.error(request, f'Error: Course could not be added.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+
+@login_required(login_url='user_login')
+def edit_course(request, course_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    course = get_object_or_404(Course, course_id=course_id)
+
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Course {form.cleaned_data.get("course_name")} edited successfully.', extra_tags='Success')
+            return JsonResponse({'status': 'success', 'message': 'Course edited successfully', 'redirect_url': '/admin/courses/'})
+        else:
+            print(form.errors)
+            messages.error(request, f'Error: Course could not be edited.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@login_required(login_url='user_login')
+def delete_course(request,course_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+    course = Course.objects.get(course_id=course_id)
+    sessions = CourseSection.objects.filter(course=course)
+    #if any sections have more than 4 students, return error message
+    for session in sessions:
+        if Enrollment.objects.filter(section=session).count() > 4:
+            messages.error(request, f'Error: Course {session} has more than 4 students enrolled.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'message': f'Course {session} has more than 4 students enrolled.'}, status=400)
+    #delete all sections
+    for session in sessions:
+        session.delete()
+    #delete course
+
+    course.delete()
+    messages.success(request, f'Course {course} deleted successfully.', extra_tags='Success')
+
+    return JsonResponse({'status': 'success', 'message': f'Course {course} deleted successfully.'})
 #endregion
 #region faculty
 #### FACULTY VIEWS ####

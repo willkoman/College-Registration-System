@@ -52,6 +52,9 @@ urlpatterns = [
 
     path('admin/users/', views.admin_users_view, name='admin_users_view'),
     path('admin/courses/', views.admin_course_view, name='admin_course_view'),
+    path('admin/add_course/', views.add_course, name='admin_add_course'),
+    path('admin/update_course/<int:course_id>', views.edit_course, name='admin_update_course'),
+    path('admin/delete_course/<int:course_id>', views.delete_course, name='admin_delete_course'),
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
     path('add_user/', views.add_user, name='add_user'),

@@ -1,13 +1,19 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-
+<div>
+    <button class="btn btn-primary" onclick="window.location.href='/admin/'">Back</button>
+</div>
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#addCourseModal">
+    Add Course
+</button>
 <table id="courseTable" class="display">
     <thead>
         <tr>
             <th>Course Name</th>
             <th>Department</th>
             <th>Course ID</th>
+            <th>Credits</th>
             <th>Description</th>
             <th>Actions</th>
         </tr>
@@ -18,25 +24,237 @@
             <td>{{ course }}</td>
             <td>{{ course.department }}</td>
             <td>{{course.course_id}}</td>
+            <td>{{ course.no_of_credits}}</td>
             <td>{{ course.description}}</td>
             <td>
                 <button class="btn btn-primary edit-btn"
-                >Edit course</button>
-                <button class="btn btn-secondary edit-btn"
-                >Edit sections</button>
+                    data-toggle="modal"
+                    data-target="#editCourseModal"
+                    data-courseid="{{ course.course_id }}"
+                    data-coursename="{{ course.course_name }}"
+                    data-coursenumber="{{ course.course_number }}"
+                    data-departmentid="{{ course.department.department_id }}"
+                    data-credits="{{ course.no_of_credits }}"
+                    data-description="{{ course.description }}"
+                    data-coursetype="{{ course.course_type }}">
+                    Edit course
+                </button>
+                <button class="btn btn-secondary section-btn">
+                    Edit Sections
+                </button>
+                <button class="btn btn-danger delete-btn"
+                data-courseid="{{ course.course_id }}"
+                >
+                    Delete Course
+                </button>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
+<!-- Edit Course Modal -->
+<div class="modal fade" id="editCourseModal" tabindex="-1" role="dialog" aria-labelledby="editCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCourseModalLabel">Edit Course</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editCourseForm">
+                    <input type="hidden" id="courseId" name="course_id">
+                    <div class="form-group">
+                        <label for="courseName">Course Name</label>
+                        <input type="text" class="form-control" id="courseName" name="course_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseNumber">Course Number</label>
+                        <input type="number" class="form-control" id="courseNumber" name="course_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDepartment">Department</label>
+                        <select class="form-control" id="courseDepartment" name="department">
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}">{{ department.department_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseCredits">Credits</label>
+                        <input type="number" class="form-control" id="courseCredits" name="no_of_credits">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescription">Description</label>
+                        <textarea class="form-control" id="courseDescription" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseType">Course Type</label>
+                        <select class="form-control" id="courseType" name="course_type">
+                            <option value="UnderGrad">Undergraduate</option>
+                            <option value="Grad">Graduate</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCourseModal" tabindex="-1" role="dialog" aria-labelledby="addCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCourseModalLabel">Add New Course</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addCourseForm">
+                    <input type="hidden" id="courseId" name="course_id">
+                    <div class="form-group">
+                        <label for="courseName">Course Name</label>
+                        <input type="text" class="form-control" id="courseName" name="course_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseNumber">Course Number</label>
+                        <input type="number" class="form-control" id="courseNumber" name="course_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDepartment">Department</label>
+                        <select class="form-control" id="courseDepartment" name="department">
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}">{{ department.department_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseCredits">Credits</label>
+                        <input type="number" class="form-control" id="courseCredits" name="no_of_credits">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescription">Description</label>
+                        <textarea class="form-control" id="courseDescription" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseType">Course Type</label>
+                        <select class="form-control" id="courseType" name="course_type">
+                            <option value="UnderGrad">Undergraduate</option>
+                            <option value="Grad">Graduate</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Course</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {%endblock%}
 
 {% block script %}
 <script>
     $(document).ready(function () {
-        $('#courseTable').DataTable();
+        // Initialize DataTable for the course table
+        $('#courseTable').DataTable({responsive: true});
+
+        // Function to populate the edit course modal
+        function populateEditModal(courseId, courseName, courseNumber, departmentId, credits, description, courseType) {
+            $('#editCourseModal #courseId').val(courseId);
+            $('#editCourseModal #courseName').val(courseName);
+            $('#editCourseModal #courseNumber').val(courseNumber);
+            $('#editCourseModal #courseDepartment').val(departmentId);
+            $('#editCourseModal #courseCredits').val(credits);
+            $('#editCourseModal #courseDescription').val(description);
+            $('#editCourseModal #courseType').val(courseType);
+            $('#editCourseModal').modal('show');
+        }
+
+        // Open the edit course modal with prefilled data
+        $('#courseTable').on('click', '.edit-btn', function() {
+            var courseId = $(this).data('courseid');
+            var courseNumber = $(this).data('coursenumber');
+            var courseName = $(this).data('coursename');
+            var departmentId = $(this).data('departmentid');
+            var credits = $(this).data('credits');
+            var description = $(this).data('description');
+            var courseType = $(this).data('coursetype');
+            populateEditModal(courseId, courseName, courseNumber, departmentId, credits, description, courseType);
+        });
+
+        //handle course delete /admin/delete_course/<int:course_id>
+        $('#courseTable').on('click', '.delete-btn', function() {
+            var courseId = $(this).data('courseid');
+            $.ajax({
+                url: '/admin/delete_course/'+courseId, // Replace with your path to the delete course endpoint
+                type: 'POST',
+                success: function(response) {
+                    // Reload the page or update the UI as needed
+                    if (response.status === 'success') {
+                        window.location.reload(); // Reload the page on success
+                    } else {
+                        alert('Error: ' + response.message); // Display error message
+                    }
+                },
+                error: function() {
+                    alert('Error deleting course');
+                }
+            });
+        });
+
+        // Handle the submission of the edit course form
+        $('#editCourseForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            $.ajax({
+                url: '/admin/update_course/'+$('#courseId').val(), // Replace with your path to the update course endpoint
+                type: 'POST',
+                //course_id needs to be passed
+                data: formData,
+                success: function(response) {
+                    // Reload the page or update the UI as needed
+                    if (response.status === 'success') {
+                        window.location.reload(); // Reload the page on success
+                    } else {
+                        alert('Error: ' + response.message); // Display error message
+                    }
+                },
+                error: function() {
+                    alert('Error updating course');
+                }
+            });
+        });
+
+        // Open add course modal
+        $('#addCourseBtn').on('click', function() {
+            $('#addCourseModal').modal('show');
+        });
+
+        // Handle the submission of the add course form
+        $('#addCourseForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            $.ajax({
+                url: '/admin/add_course/', // Replace with your path to the add course endpoint
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        window.location.reload(); // Reload the page on success
+                    } else {
+                        alert('Error: ' + response.message); // Display error message
+                    }
+                },
+                error: function() {
+                    alert('Error adding course');
+                }
+            });
+        });
     });
 </script>
 {% endblock %}
+
 ```

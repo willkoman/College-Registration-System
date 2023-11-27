@@ -1,5 +1,5 @@
 from django import forms
-from .models import Major, Minor, User, Login, Student, Faculty, Admin, Department
+from .models import Course, Major, Minor, User, Login, Student, Faculty, Admin, Department
 from django.contrib.admin.forms import AdminAuthenticationForm
 
 class LoginForm(forms.ModelForm):
@@ -93,3 +93,12 @@ class UserCompositeForm(forms.ModelForm):
             # ...
 
         return user
+
+class CourseForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        exclude = ['course_id']
+        fields = ['course_name','course_number', 'department', 'no_of_credits', 'description', 'course_type']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }

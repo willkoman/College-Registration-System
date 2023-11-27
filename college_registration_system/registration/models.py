@@ -1,3 +1,4 @@
+import random
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.contrib.auth.hashers import make_password
@@ -518,6 +519,16 @@ class Course(models.Model):
 
     def __str__(self):
         return self.course_name
+    def save(self, *args, **kwargs):
+        if not self.course_id:
+            # Generate a unique course_id not already in the database
+            while True:
+                course_id = random.randint(100000, 999999)
+                if not Course.objects.filter(course_id=course_id).exists():
+                    self.course_id = course_id
+                    break
+
+        super(Course, self).save(*args, **kwargs)
 # CoursePrereq Model
 class CoursePrereq(models.Model):
     course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)

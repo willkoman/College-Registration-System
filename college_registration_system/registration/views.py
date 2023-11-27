@@ -576,8 +576,12 @@ def degreeAudit_view(request):
         minor_reqs = MinorDegreeRequirements.objects.get(minor=student.minor_id)
         context['minor_reqs'] = minor_reqs
     #get courses from course sections in studenthistory
+    context['inprogress_courses'] = Enrollment.objects.filter(student=student)
+    context['inprogress_courses'] = [course.section.course for course in context['inprogress_courses']]
     context['completed_courses'] = StudentHistory.objects.filter(student=student)
-    context['completed_courses'] = [course.section.course for course in context['completed_courses']]
+    #completed courses are not currently in progress
+    context['completed_courses'] = [course.section.course for course in context['completed_courses'] if course.section.course not in context['inprogress_courses']]
+    print("Inprogress Courses:", context['inprogress_courses'])
     print("Completed Courses:", context['completed_courses'])
 
     # Calculate credits

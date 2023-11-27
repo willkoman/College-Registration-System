@@ -76,7 +76,7 @@
             <tr>
                 <td>{{ course.course_name }}</td>
                 <td>{{ course.no_of_credits }}</td>
-                <td>{% if course.id in completed_courses %}Completed{% elif course.id in inprogress_courses %}In Progress{% else %}Not Started{% endif %}</td>
+                <td>{% if course.course_id in completed_courses %}Completed{% elif course.course_id in inprogress_courses %}In Progress{% else %}Not Started{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>

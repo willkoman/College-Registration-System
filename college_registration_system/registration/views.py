@@ -615,6 +615,9 @@ def admin_view(request):
 
 @login_required(login_url='user_login')
 def admin_users_view(request, user_id=None):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     user = None
     if user_id:
         user = User.objects.get(id=user_id)
@@ -640,6 +643,9 @@ def admin_users_view(request, user_id=None):
     return render(request, 'admin/admin_users.html', context)
 
 def get_user_form(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
     user_id = request.GET.get('user_id')
     user = User.objects.get(id=user_id)
     form = UserCompositeForm(instance=user)
@@ -734,6 +740,9 @@ def add_user(request):
         return JsonResponse({'status': 'method not allowed'}, status=405)
 @login_required(login_url='user_login')
 def admin_course_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
     context = {
         'username': request.user.user.first_name+' '+request.user.user.last_name,
         'usertype': request.user.user.user_type,

@@ -10,9 +10,10 @@
 <table id="courseTable" class="display">
     <thead>
         <tr>
-            <th>Course Name</th>
-            <th>Department</th>
             <th>Course ID</th>
+            <th>Course Name</th>
+            <th>Course Number</th>
+            <th>Department</th>
             <th>Credits</th>
             <th>Description</th>
             <th>Actions</th>
@@ -21,9 +22,10 @@
     <tbody>
         {% for course in courses %}
         <tr>
-            <td>{{ course }}</td>
-            <td>{{ course.department }}</td>
             <td>{{course.course_id}}</td>
+            <td>{{ course }}</td>
+            <td>{{course.course_number}}</td>
+            <td>{{ course.department }}</td>
             <td>{{ course.no_of_credits}}</td>
             <td>{{ course.description}}</td>
             <td>

@@ -62,6 +62,7 @@ class Command(BaseCommand):
         self.stdout.write("2: Generate rooms")
         self.stdout.write("3: Generate users")
         self.stdout.write("4: Generate courses")
+        self.stdout.write("4.5: Generate sections")
         self.stdout.write("5: Generate sections")
         self.stdout.write("6: Generate enrollments")
         self.stdout.write("7: Remove underfilled sections")
@@ -86,6 +87,8 @@ class Command(BaseCommand):
             self.create_users(fake)
         elif choice == '4':
             self.create_courses(fake)
+        elif choice == '4.5':
+            self.create_course_prereqs(fake)
         elif choice == '5':
             self.create_sections(fake)
         elif choice == '6':
@@ -238,47 +241,52 @@ class Command(BaseCommand):
                 for course_prefix in ['Intro to', 'Concepts of', 'Advanced Subjects of']:
                     # Create course
                     course_level = 'UnderGrad' if course_prefix != 'Advanced Subjects of' else 'Grad'
-                    course, created = Course.objects.get_or_create(
-                        course_id=fake.random_int(min=10000, max=99999),
-                        defaults={
-                            'course_name': f'{course_prefix} {major.major_name}',
-                            'department': major.department,
-                            'course_type': course_level,
-                            'course_number': fake.random_int(min=100, max=499 if course_level == 'UnderGrad' else 899),
-                            'no_of_credits': random.choice([3, 4]),
-                            'description': f'This is a(n) {course_level} course in {major.major_name}\nPre-requisites:\n',
-                        }
+                    course = Course.objects.create(
+                            course_name=f'{course_prefix} {major.major_name}',
+                            department=major.department,
+                            course_type=course_level,
+                            course_number=fake.random_int(min=100, max=499 if course_level == 'UnderGrad' else 899),
+                            no_of_credits=random.choice([3, 4]),
+                            description=f'This is a(n) {course_level} course in {major.major_name}',
                     )
-                    if created:
-                        print(f'Created {course.course_name}')
-                    else:
-                        print(f'Course {course.course_name} already exists')
+                    print(f'Created course {course.course_name}')
             except IntegrityError:
-                print(f'Course {course.course_name} already exists')
+                print(f'Course already exists')
         # create prereqs for concepts of courses and advanced subjects of courses
+
+    def create_course_prereqs(self, fake):
         for course in Course.objects.all():
             if course.course_name.startswith('Concepts of') or course.course_name.startswith('Advanced Subjects of'):
                 #set prereq to be lower level course in same major
                 if course.course_name.startswith('Concepts of'):
                     print(f'Creating prereq for {course.course_name}')
                     prereq = Course.objects.filter(course_name__startswith='Intro to'+course.course_name.removeprefix('Concepts of'),department=course.department).first()
+                    CoursePrereq.objects.create(
+                        course=course,
+                        pr_course=prereq,
+                        min_grade='C',
+                        date_of_last_update=dt.date.today()
+                    )
                 elif course.course_name.startswith('Advanced Subjects of'):
                     print(f'Creating prereq for {course.course_name}')
                     prereq = Course.objects.filter(course_name__startswith='Concepts of'+course.course_name.removeprefix('Advanced Subjects of'),department=course.department).first()
-                CoursePrereq.objects.create(
-                    course=course,
-                    pr_course=prereq,
-                    min_grade='C',
-                    date_of_last_update=dt.date.today()
-                )
-                course.description += prereq.course_name + '\n'
+                    CoursePrereq.objects.create(
+                        course=course,
+                        pr_course=prereq,
+                        min_grade='C',
+                        date_of_last_update=dt.date.today()
+                    )
+                # course.description += prereq.course_name + '\n'
                 course.save()
+
     def create_sections(self, fake):
         for semester in Semester.objects.all():
+            # if semester.semester_name == 'Fall 2023':
+            #     continue
             faculty_course_count = defaultdict(int)
             for course in Course.objects.all():
                 # Create 1-2 sections for each course
-                num_of_sections = random.randint(0, 2)
+                num_of_sections = random.randint(0, 1)
                 print(f'Creating {num_of_sections} sections for {course.course_name} for {semester}')
 
                 for _ in range(num_of_sections):
@@ -300,7 +308,6 @@ class Command(BaseCommand):
                     print(f'Creating section for {course.course_name} taught by {selected_faculty}')
                     CourseSection.objects.create(
                         course=course,
-                        crn=fake.random_int(min=10000, max=99999),
                         available_seats=fake.random_int(min=10, max=20),
                         faculty=selected_faculty,
                         semester=semester,

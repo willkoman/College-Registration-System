@@ -36,6 +36,33 @@ class UserAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         return queryset.order_by('user_type','last_name', 'first_name')
 
+class CourseSectionAdmin(admin.ModelAdmin):
+    list_display = ('course', 'crn', 'semester', 'faculty', 'room', 'timeslot')
+    list_filter = ('semester', 'faculty', 'room', 'timeslot')
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.order_by('course', 'crn')
+
+    def course(self, obj):
+        return obj.course_id
+    course.admin_order_field = 'course_id'  # Allows column order sorting
+
+    def crn(self, obj):
+        return obj.crn
+    crn.admin_order_field = 'crn'  # Allows column order sorting
+
+    def faculty(self, obj):
+        return obj.faculty_id
+    faculty.admin_order_field = 'faculty_id'  # Allows column order sorting
+
+    def room(self, obj):
+        return obj.room_id
+    room.admin_order_field = 'room_id'  # Allows column order sorting
+
+    def timeslot(self, obj):
+        return obj.timeslot_id
+    timeslot.admin_order_field = 'timeslot_id'  # Allows column order sorting
 
 admin.site.register(Login, LoginAdmin)
 admin.site.register(User, UserAdmin)
@@ -58,7 +85,7 @@ admin.site.register(Room, RoomAdmin)
 admin.site.register(Lab)
 admin.site.register(Lecture)
 admin.site.register(Semester)
-admin.site.register(CourseSection)
+admin.site.register(CourseSection, CourseSectionAdmin)
 admin.site.register(Course)
 admin.site.register(CoursePrereq)
 admin.site.register(Enrollment)

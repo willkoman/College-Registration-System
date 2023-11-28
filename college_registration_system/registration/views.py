@@ -176,6 +176,7 @@ def schedule_view(request):
             'semester': section.semester,
             'room': str(section.room.building)+str(section.room.room_no),
             'faculty': section.faculty,
+            'available_seats': int(section.available_seats),
         })
 
         context['departments'] = Department.objects.all()

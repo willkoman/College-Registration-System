@@ -52,6 +52,7 @@
                 <th>Room</th>
                 <th>Timeslot</th>
                 <th>Semester</th>
+                <th>Seats Available</th>
                 {% if usertype == "Student" %}
                 <th>Register</th>
                 {% endif %}
@@ -68,6 +69,7 @@
                 <td>{{section.room}}</td>
                 <td>{{ section.days }}:<br> {{ section.timeslot }}</td>
                 <td>{{ section.semester }}</td>
+                <td {% if section.available_seats <= 0 %}style="color: red;"{%endif%}>{{ section.available_seats }}</td>
                 {% if usertype == "Student" %}
                 <td><a href="/register/{{ section.crn }}/" class="btn btn-primary" onClick="showLoadingModal('Registering...')">Register</a></td>
                 {% endif %}

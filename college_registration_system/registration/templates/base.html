@@ -170,6 +170,12 @@
   function hideLoadingModal() {
       $('#loadingModal').hide();
   }
+  $(document).ready(function() {
+    window.onpageshow = function(event) {
+      hideLoadingModal();
+    };
+    $('#loadingModal').hide();
+  });
 
 
   function getCookie(name) {

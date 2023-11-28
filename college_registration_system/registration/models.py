@@ -46,8 +46,14 @@ def create_or_update_user_login(sender, instance, created, **kwargs):
         pass  # Continue if Login does not exist
 
     if created:
-        #if email is not provided, create email from first and last name
+        #create email from first and last name
         email = f"{instance.first_name[0].lower()}{instance.last_name.lower()}@mikehawk.edu"
+        #if another user has the same email, add a sequence number to the email
+        i=1
+        while Login.objects.filter(email=email).exists():
+            email = f"{instance.first_name[0].lower()}{instance.last_name.lower()}{i}@mikehawk.edu"
+            i+=1
+
         password = make_password("123456")  # Hash the default password
         #if login already exists, do not create login
         try:
@@ -225,8 +231,8 @@ class Undergrad_Full_Time(models.Model):
         # Add other standings as needed
     ]
     standing = models.CharField(max_length=10, choices=STANDING_CHOICES)
-    min_creds = models.IntegerField(default=12)
-    max_creds = models.IntegerField(default=18)
+    min_creds = models.IntegerField(default=9)
+    max_creds = models.IntegerField(default=16)
     creds_earned = models.IntegerField(default=0)
 
     def __str__(self):
@@ -243,8 +249,8 @@ class Undergrad_Part_Time(models.Model):
         # Add other standings as needed
     ]
     standing = models.CharField(max_length=10, choices=STANDING_CHOICES)
-    min_creds = models.IntegerField(default=4)
-    max_creds = models.IntegerField(default=11)
+    min_creds = models.IntegerField(default=3)
+    max_creds = models.IntegerField(default=8)
     creds_earned = models.IntegerField(default=0)
 
     def __str__(self):
@@ -336,7 +342,7 @@ class Faculty(models.Model):
 # Faculty_FullTime Model
 class Faculty_FullTime(models.Model):
     faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, primary_key=True)
-    num_of_courses = models.IntegerField( default=2)
+    num_of_courses = models.IntegerField( default=0)
     office = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
@@ -344,7 +350,7 @@ class Faculty_FullTime(models.Model):
 # Faculty_PartTime Model
 class Faculty_PartTime(models.Model):
     faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, primary_key=True)
-    num_of_courses = models.IntegerField( default=1)
+    num_of_courses = models.IntegerField( default=0)
     office = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
@@ -462,6 +468,17 @@ class CourseSection(models.Model):
     def __str__(self):
         return self.course.course_name+' | CRN: '+str(self.crn)
 
+    def save(self, *args, **kwargs):
+        if not self.crn:
+            # Generate a unique crn not already in the database
+            while True:
+                crn = random.randint(10000, 99999)
+                if not CourseSection.objects.filter(crn=crn).exists():
+                    self.crn = crn
+                    break
+
+        super(CourseSection, self).save(*args, **kwargs)
+
 @receiver(post_save, sender=CourseSection)
 def create_faculty_history(sender, instance, created, **kwargs):
     if created:
@@ -523,7 +540,7 @@ class Course(models.Model):
         if not self.course_id:
             # Generate a unique course_id not already in the database
             while True:
-                course_id = random.randint(100000, 999999)
+                course_id = random.randint(10000, 99999)
                 if not Course.objects.filter(course_id=course_id).exists():
                     self.course_id = course_id
                     break

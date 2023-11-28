@@ -27,9 +27,18 @@ class RoomAdmin(admin.ModelAdmin):
     formatted_room_no.admin_order_field = 'room_no'  # Allows column order sorting
     formatted_room_no.short_description = 'Room No'
 
+class UserAdmin(admin.ModelAdmin):
+    #search by name
+    search_fields = ['first_name', 'last_name', 'user_type']
+    #display list of users
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.order_by('user_type','last_name', 'first_name')
+
 
 admin.site.register(Login, LoginAdmin)
-admin.site.register(User)
+admin.site.register(User, UserAdmin)
 admin.site.register(Admin)
 admin.site.register(Student)
 admin.site.register(Undergraduate)

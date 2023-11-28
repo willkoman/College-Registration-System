@@ -9,6 +9,53 @@ from collections import defaultdict
 class Command(BaseCommand):
     help = 'Populates the database with random data'
 
+    majors_by_department = {
+        'Math': ['Math', 'Statistics'],
+        'Science': ['Science', 'Environmental Science'],
+        'Arts': ['Arts', 'Fine Arts'],
+        'English': ['English', 'Creative Writing'],
+        'History': ['History', 'Historical Studies'],
+        'Computer Science': ['Computer Science', 'Machine Learning'],
+        'Business': ['Business', 'Finance'],
+        'Engineering': ['Engineering', 'Mechanical Engineering'],
+        'Music': ['Music', 'Music Theory'],
+        'Theater': ['Theater', 'Dramatic Arts'],
+        'Dance': ['Dance', 'Choreography'],
+        'Biology': ['Biology', 'Molecular Biology'],
+        'Chemistry': ['Chemistry', 'Biochemistry'],
+        'Physics': ['Physics', 'Astrophysics'],
+        'Geology': ['Geology', 'Earth Sciences'],
+        'Psychology': ['Psychology', 'Clinical Psychology'],
+        'Sociology': ['Sociology', 'Social Theory'],
+        'Anthropology': ['Anthropology', 'Cultural Anthropology'],
+        'Philosophy': ['Philosophy', 'Ethics'],
+        'Religion': ['Religion', 'Theological Studies'],
+        'Economics': ['Economics', 'International Economics'],
+        'Political Science': ['Political Science', 'International Relations'],
+        'Foreign Language': ['Foreign Language', 'Linguistics'],
+        'Education': ['Education', 'Curriculum and Instruction'],
+        'Nursing': ['Nursing', 'Healthcare Administration'],
+        'Medicine': ['Medicine', 'Biomedical Sciences'],
+        'Law': ['Law', 'Criminal Law'],
+        'Criminal Justice': ['Criminal Justice', 'Forensic Science'],
+        'Architecture': ['Architecture', 'Urban Design'],
+        'Agriculture': ['Agriculture', 'Agronomy'],
+        'Veterinary Medicine': ['Veterinary Medicine', 'Animal Science'],
+        'Dentistry': ['Dentistry', 'Orthodontics'],
+        'Pharmacy': ['Pharmacy', 'Pharmacology'],
+        'Library Science': ['Library Science', 'Information Management'],
+        'Journalism': ['Journalism', 'Media Studies'],
+        'Communications': ['Communications', 'Digital Communication'],
+        'Public Relations': ['Public Relations', 'Corporate Communication'],
+        'Social Work': ['Social Work', 'Community Health'],
+        'Public Administration': ['Public Administration', 'Governmental Affairs'],
+        'Urban Planning': ['Urban Planning', 'Community Development'],
+        'Hospitality': ['Hospitality', 'Tourism Management'],
+        'Recreation': ['Recreation', 'Sports Management'],
+        'Fitness': ['Fitness', 'Kinesiology'],
+        'Cosmetology': ['Cosmetology', 'Beauty Therapy'],
+        'Culinary Arts': ['Culinary Arts', 'Food Science']
+    }
     def handle(self, *args, **kwargs):
         self.stdout.write("Select an option to proceed:")
         self.stdout.write("1: Generate all data")
@@ -19,13 +66,14 @@ class Command(BaseCommand):
         self.stdout.write("6: Generate enrollments")
         self.stdout.write("7: Remove underfilled sections")
         self.stdout.write("8: Generate major and minor requirements")
-
-        choice = input("Enter your choice (1-8): ")
+        self.stdout.write("0: Delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments")
+        choice = input("Enter your choice (1-8, 0): ")
 
         fake = Faker()
 
         if choice == '1':
             self.create_rooms(fake)
+            self.create_majors_minors(fake)
             self.create_users(fake)
             self.create_courses(fake)
             self.create_sections(fake)
@@ -46,8 +94,37 @@ class Command(BaseCommand):
             self.remove_underfilled_sections(fake)
         elif choice == '8':
             self.create_major_minor_requirements(fake)
+        elif choice == '0':
+            self.delete_all_data(fake)
         else:
             self.stdout.write("Invalid choice.")
+
+    def create_majors_minors(self, fake):
+        for department in Department.objects.all():
+            if department.department_name == 'Undecided':
+                continue
+            if department.department_name == 'Other':
+                continue
+            for major_name in self.majors_by_department[department.department_name]:
+                major, created = Major.objects.get_or_create(
+                    department=department,
+                    major_name=major_name,
+                )
+                if created:
+                    print(f'Created major {major}')
+                else:
+                    print(f'Major {major} already exists')
+
+                # Create minor
+                minor, created = Minor.objects.get_or_create(
+                    department=department,
+                    minor_name=major_name,
+                )
+                if created:
+                    print(f'Created minor {minor}')
+                else:
+                    print(f'Minor {minor} already exists')
+
 
     def create_rooms(self, fake):
         for building in Building.objects.all():
@@ -61,30 +138,30 @@ class Command(BaseCommand):
                     print(f'Room {room} in {building} already exists')
 
     def create_users(self, fake):
-        for _ in range(200):
+        # for _ in range(1000):
 
-            user = User.objects.create(
-                id=uuid.uuid4(),
-                first_name=fake.first_name(),
-                last_name=fake.last_name(),
-                gender=random.choice(['M', 'F']),
-                dob=fake.date_of_birth(),
-                street=fake.street_address(),
-                city=fake.city(),
-                state=fake.state(),
-                zip_code=fake.zipcode(),
-                user_type='Student'
-            )
-            user.save()
-            s=Student.objects.get(user=user)
-            s.student_type=random.choice(['Undergraduate', 'Graduate'])
-            s.major_id=Major.objects.order_by('?').first()
-            s.enrollment_year=fake.random_int(min=2015, max=2020)
-            # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
-            s.save()
-            print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
+        #     user = User.objects.create(
+        #         id=uuid.uuid4(),
+        #         first_name=fake.first_name(),
+        #         last_name=fake.last_name(),
+        #         gender=random.choice(['M', 'F']),
+        #         dob=fake.date_of_birth(),
+        #         street=fake.street_address(),
+        #         city=fake.city(),
+        #         state=fake.state(),
+        #         zip_code=fake.zipcode(),
+        #         user_type='Student'
+        #     )
+        #     user.save()
+        #     s=Student.objects.get(user=user)
+        #     s.student_type=random.choice(['Undergraduate', 'Graduate'])
+        #     s.major_id=Major.objects.order_by('?').first()
+        #     s.enrollment_year=fake.random_int(min=2015, max=2020)
+        #     # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
+        #     s.save()
+        #     print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
 
-        for _ in range(50):
+        for _ in range(300):
             user = User.objects.create(
                 id=uuid.uuid4(),
                 first_name=fake.first_name(),
@@ -100,11 +177,10 @@ class Command(BaseCommand):
             user.save()
             f=Faculty.objects.get_or_create(
             user=user,
-            fac_type=random.choice(['FullTime', 'PartTime']),
-            specialty=fake.job(),
-            rank=random.choice(['Professor', 'Assistant Professor', 'Adjunct Professor', 'Teaching Assistant']),
-
             )[0]
+            f.fac_type=random.choice(['FullTime', 'PartTime'])
+            f.specialty=fake.job()
+            f.rank=random.choice(['Professor', 'Assistant Professor', 'Adjunct Professor', 'Teaching Assistant'])
             f.departments.add(Department.objects.order_by('?').first())
             f.save()
 
@@ -169,7 +245,8 @@ class Command(BaseCommand):
                             'department': major.department,
                             'course_type': course_level,
                             'course_number': fake.random_int(min=100, max=499 if course_level == 'UnderGrad' else 899),
-                            'no_of_credits': random.choice([3, 4])
+                            'no_of_credits': random.choice([3, 4]),
+                            'description': f'This is a(n) {course_level} course in {major.major_name}\nPre-requisites:\n',
                         }
                     )
                     if created:
@@ -178,42 +255,48 @@ class Command(BaseCommand):
                         print(f'Course {course.course_name} already exists')
             except IntegrityError:
                 print(f'Course {course.course_name} already exists')
-        #create prereqs for concepts of courses and advanced subjects of courses
+        # create prereqs for concepts of courses and advanced subjects of courses
         for course in Course.objects.all():
             if course.course_name.startswith('Concepts of') or course.course_name.startswith('Advanced Subjects of'):
                 #set prereq to be lower level course in same major
                 if course.course_name.startswith('Concepts of'):
-                    prereq = Course.objects.filter(course_name__startswith='Intro to', department=course.department).order_by('?').first()
+                    print(f'Creating prereq for {course.course_name}')
+                    prereq = Course.objects.filter(course_name__startswith='Intro to'+course.course_name.removeprefix('Concepts of'),department=course.department).first()
                 elif course.course_name.startswith('Advanced Subjects of'):
-                    prereq = Course.objects.filter(course_name__startswith='Concepts of', department=course.department).order_by('?').first()
+                    print(f'Creating prereq for {course.course_name}')
+                    prereq = Course.objects.filter(course_name__startswith='Concepts of'+course.course_name.removeprefix('Advanced Subjects of'),department=course.department).first()
                 CoursePrereq.objects.create(
                     course=course,
                     pr_course=prereq,
                     min_grade='C',
                     date_of_last_update=dt.date.today()
                 )
+                course.description += prereq.course_name + '\n'
+                course.save()
     def create_sections(self, fake):
-        faculty_course_count = defaultdict(int)
-        for course in Course.objects.all():
-            # Create 1-2 sections for each course
-            num_of_sections = random.randint(0, 2)
+        for semester in Semester.objects.all():
+            faculty_course_count = defaultdict(int)
+            for course in Course.objects.all():
+                # Create 1-2 sections for each course
+                num_of_sections = random.randint(0, 2)
+                print(f'Creating {num_of_sections} sections for {course.course_name} for {semester}')
 
-            for _ in range(num_of_sections):
-                # Select a random faculty member who hasn't exceeded their course limit
-                eligible_faculty = [f for f in Faculty.objects.all() if faculty_course_count[f.user.id] < (1 if f.fac_type == 'PartTime' else 2)]
-                #if possible, only select faculty from the same department as the course
-                eligible_faculty = [f for f in eligible_faculty if f.departments.filter(department_name=course.department.department_name).exists()]
-                if not eligible_faculty:
-                    print("No eligible faculty available for more courses.")
-                    break
+                for _ in range(num_of_sections):
+                    # Select a random faculty member who hasn't exceeded their course limit
+                    eligible_faculty = [f for f in Faculty.objects.all() if faculty_course_count[f.user.id] < (1 if f.fac_type == 'PartTime' else 2)]
+                    #if possible, only select faculty from the same department as the course
+                    eligible_faculty = [f for f in eligible_faculty if f.departments.filter(department_name=course.department.department_name).exists()]
+                    if not eligible_faculty:
+                        print("No eligible faculty available for more courses.")
+                        break
 
-                selected_faculty = random.choice(eligible_faculty)
+                    selected_faculty = random.choice(eligible_faculty)
 
-                # Create a course section with the selected faculty
-                for semester in Semester.objects.all():
-                    #if fall 2023 then skip
-                    if semester.semester_name == 'Fall 2023':
-                        continue
+                    # Create a course section with the selected faculty
+
+                        #if fall 2023 then skip
+                        # if semester.semester_name == 'Fall 2023':
+                        #     continue
                     print(f'Creating section for {course.course_name} taught by {selected_faculty}')
                     CourseSection.objects.create(
                         course=course,
@@ -224,8 +307,8 @@ class Command(BaseCommand):
                         timeslot=fake.random_element(elements=Timeslot.objects.all()),
                         room=fake.random_element(elements=Room.objects.all()),
                     )
-                # Update the faculty's course count
-                faculty_course_count[selected_faculty.user.id] += 1
+                    # Update the faculty's course count
+                    faculty_course_count[selected_faculty.user.id] += 1
 
     def enroll_students(self, fake):
         for student in Student.objects.all():
@@ -236,7 +319,7 @@ class Command(BaseCommand):
                 for _ in range(course_limit):
                     section = CourseSection.objects.filter(course__in=available_courses,semester=semester).order_by('?').first()
                     if section:
-                        if section.enrollment_set.count() >= section.available_seats:
+                        if section.available_seats <= 0:
                             print(f'Section {section} is full! Trying again...')
                             course_limit += 1
                             continue
@@ -245,19 +328,31 @@ class Command(BaseCommand):
                             print(f"Section {section} conflicts with another course! Trying again...")
                             course_limit += 1
                             continue
-                        Enrollment.objects.create(
-                            student=student,
-                            section=section,
-                            grade=random.choice(['A', 'B', 'C', 'D', 'F']),
-                            date_of_enrollment=dt.date.today()
-                        )
+                        if semester.semester_name == 'Fall 2023':
+                            Enrollment.objects.create(
+                                student=student,
+                                section=section,
+                                grade=random.choice(['A', 'B', 'C', 'D', 'F']),
+                                date_of_enrollment=dt.date.today()
+                            )
+                        else:
+                            Enrollment.objects.create(
+                                student=student,
+                                section=section,
+                                grade=random.choice(['NA']),
+                                date_of_enrollment=dt.date.today()
+                            )
                         print(f'Enrolled {student} in {section} for {semester}')
+                        section.available_seats -= 1
+                        section.save()
                     else:
                         print(f'No sections available for {student}!')
 
     def remove_underfilled_sections(self, fake):
         for section in CourseSection.objects.all():
             if section.enrollment_set.count() < 5:
+                if section.semester.semester_name=='Spring 2024':
+                    continue
                 print(f'Removing section {section}')
                 section.delete()
 
@@ -316,3 +411,27 @@ class Command(BaseCommand):
             minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of Science'))
             minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of History'))
             minor_requirements.save()
+
+    def delete_all_data(self, fake):
+        #delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments
+        User.objects.exclude(first_name='Super').exclude(last_name='Krasnov').exclude(first_name='R').delete()
+        Room.objects.all().delete()
+        Course.objects.all().delete()
+        CourseSection.objects.all().delete()
+        Enrollment.objects.all().delete()
+        Major.objects.all().delete()
+        Minor.objects.all().delete()
+        MajorDegreeRequirements.objects.all().delete()
+        MinorDegreeRequirements.objects.all().delete()
+        CoursePrereq.objects.all().delete()
+        Faculty_FullTime.objects.all().delete()
+        Faculty_PartTime.objects.all().delete()
+        Grad_Part_Time.objects.all().delete()
+        Grad_Full_Time.objects.all().delete()
+        Undergrad_Part_Time.objects.all().delete()
+        Undergrad_Full_Time.objects.all().delete()
+        Graduate.objects.all().delete()
+        Undergraduate.objects.all().delete()
+        Student.objects.all().delete()
+        Faculty.objects.all().delete()
+        print("Deleted all data except users: Super Admin, William Krasnov, and R Khusro, and departments, and building(s)")

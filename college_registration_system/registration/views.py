@@ -7,10 +7,10 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import transaction
 from django.db.models import Sum
-from .forms import CourseForm, UserCompositeForm
+from .forms import CourseForm, CourseSectionForm, UserCompositeForm
 from .models import (
-    CoursePrereq,Attendance, Semester,Hold, CourseSection,Department, Course,Login,
-    Enrollment,Day,StudentHistory, User, Admin, Student, Faculty,Faculty_FullTime,
+    CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
+    Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime,
     Faculty_PartTime, Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,
     Undergrad_Part_Time, Undergraduate, Major,Minor, MajorDegreeRequirements,MinorDegreeRequirements
 )
@@ -814,6 +814,86 @@ def delete_course(request,course_id):
     messages.success(request, f'Course {course} deleted successfully.', extra_tags='Success')
 
     return JsonResponse({'status': 'success', 'message': f'Course {course} deleted successfully.'})
+
+@login_required(login_url='user_login')
+def admin_sections_view(request, course_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    context['course'] = Course.objects.get(course_id=course_id)
+    context['sections'] = CourseSection.objects.filter(course=context['course'])
+    context['timeslots'] = Timeslot.objects.all()
+    context['rooms'] = Room.objects.all()
+    context['semesters'] = Semester.objects.all()
+    context['available_faculty'] = []
+    availFac = Faculty.objects.filter(departments=context['course'].department)
+    for faculty in availFac:
+        if faculty.fac_type == 'Fulltime':
+            #add any faculty_fulltime where num_of_courses < 2
+            if Faculty_FullTime.objects.get(faculty=faculty).num_of_courses < 2:
+                context['available_faculty'].append(faculty)
+        else:
+            #add any faculty_parttime where num_of_courses < 1
+            if Faculty_PartTime.objects.get(faculty=faculty).num_of_courses < 1:
+                context['available_faculty'].append(faculty)
+    return render(request, 'admin/admin_course_sections.html', context)
+
+@login_required(login_url='user_login')
+def add_section(request, course_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    if request.method == 'POST':
+        form = CourseSectionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Section {form.cleaned_data.get("crn")} added successfully.',extra_tags='Success')
+            return JsonResponse({'status': 'success', 'message': 'Section added successfully', 'redirect_url': '/admin/courses/'})
+        else:
+            print(form.errors)
+            messages.error(request, f'Error: Section could not be added.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@login_required(login_url='user_login')
+def edit_section(request, crn):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    section = get_object_or_404(CourseSection, crn=crn)
+
+    if request.method == 'POST':
+        form = CourseSectionForm(request.POST, instance=section)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Section {form.cleaned_data.get("crn")} edited successfully.', extra_tags='Success')
+            return JsonResponse({'status': 'success', 'message': 'Section edited successfully', 'redirect_url': '/admin/courses/'})
+        else:
+            print(form.errors)
+            messages.error(request, f'Error: Section could not be edited.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@login_required(login_url='user_login')
+def delete_section(request,crn):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+    section = CourseSection.objects.get(crn=crn)
+    #if section has more than 4 students, return error message
+    if Enrollment.objects.filter(section=section).count() > 4:
+        messages.error(request, f'Error: Section {section} has more than 4 students enrolled.', extra_tags='Error')
+        return JsonResponse({'status': 'error', 'message': f'Section {section} has more than 4 students enrolled.'}, status=400)
+    #delete section
+    section.delete()
+    messages.success(request, f'Section {section} deleted successfully.', extra_tags='Success')
+
+    return JsonResponse({'status': 'success', 'message': f'Section {section} deleted successfully.'})
 #endregion
 #region faculty
 #### FACULTY VIEWS ####

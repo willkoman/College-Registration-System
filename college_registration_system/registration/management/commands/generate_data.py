@@ -62,13 +62,13 @@ class Command(BaseCommand):
         self.stdout.write("2: Generate rooms")
         self.stdout.write("3: Generate users")
         self.stdout.write("4: Generate courses")
-        self.stdout.write("4.5: Generate sections")
-        self.stdout.write("5: Generate sections")
-        self.stdout.write("6: Generate enrollments")
-        self.stdout.write("7: Remove underfilled sections")
-        self.stdout.write("8: Generate major and minor requirements")
+        self.stdout.write("5: Generate pre-requisites")
+        self.stdout.write("6: Generate sections")
+        self.stdout.write("7: Generate enrollments")
+        self.stdout.write("8: Remove underfilled sections")
+        self.stdout.write("9: Generate major and minor requirements")
         self.stdout.write("0: Delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments")
-        choice = input("Enter your choice (1-8, 0): ")
+        choice = input("Enter your choice (0-9): ")
 
         fake = Faker()
 
@@ -79,6 +79,7 @@ class Command(BaseCommand):
             self.create_courses(fake)
             self.create_sections(fake)
             self.enroll_students(fake)
+            self.create_course_prereqs(fake)
             self.remove_underfilled_sections(fake)
             self.create_major_minor_requirements(fake)
         elif choice == '2':
@@ -87,15 +88,15 @@ class Command(BaseCommand):
             self.create_users(fake)
         elif choice == '4':
             self.create_courses(fake)
-        elif choice == '4.5':
-            self.create_course_prereqs(fake)
         elif choice == '5':
-            self.create_sections(fake)
+            self.create_course_prereqs(fake)
         elif choice == '6':
-            self.enroll_students(fake)
+            self.create_sections(fake)
         elif choice == '7':
-            self.remove_underfilled_sections(fake)
+            self.enroll_students(fake)
         elif choice == '8':
+            self.remove_underfilled_sections(fake)
+        elif choice == '9':
             self.create_major_minor_requirements(fake)
         elif choice == '0':
             self.delete_all_data(fake)
@@ -141,28 +142,28 @@ class Command(BaseCommand):
                     print(f'Room {room} in {building} already exists')
 
     def create_users(self, fake):
-        # for _ in range(1000):
+        for _ in range(800):
 
-        #     user = User.objects.create(
-        #         id=uuid.uuid4(),
-        #         first_name=fake.first_name(),
-        #         last_name=fake.last_name(),
-        #         gender=random.choice(['M', 'F']),
-        #         dob=fake.date_of_birth(),
-        #         street=fake.street_address(),
-        #         city=fake.city(),
-        #         state=fake.state(),
-        #         zip_code=fake.zipcode(),
-        #         user_type='Student'
-        #     )
-        #     user.save()
-        #     s=Student.objects.get(user=user)
-        #     s.student_type=random.choice(['Undergraduate', 'Graduate'])
-        #     s.major_id=Major.objects.order_by('?').first()
-        #     s.enrollment_year=fake.random_int(min=2015, max=2020)
-        #     # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
-        #     s.save()
-        #     print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
+            user = User.objects.create(
+                id=uuid.uuid4(),
+                first_name=fake.first_name(),
+                last_name=fake.last_name(),
+                gender=random.choice(['M', 'F']),
+                dob=fake.date_of_birth(),
+                street=fake.street_address(),
+                city=fake.city(),
+                state=fake.state(),
+                zip_code=fake.zipcode(),
+                user_type='Student'
+            )
+            user.save()
+            s=Student.objects.get(user=user)
+            s.student_type=random.choice(['Undergraduate', 'Graduate'])
+            s.major_id=Major.objects.order_by('?').first()
+            s.enrollment_year=fake.random_int(min=2015, max=2020)
+            # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
+            s.save()
+            print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
 
         for _ in range(300):
             user = User.objects.create(
@@ -284,9 +285,9 @@ class Command(BaseCommand):
             # if semester.semester_name == 'Fall 2023':
             #     continue
             faculty_course_count = defaultdict(int)
-            for course in Course.objects.all():
+            for course in Course.objects.all().order_by('?'):
                 # Create 1-2 sections for each course
-                num_of_sections = random.randint(0, 1)
+                num_of_sections = random.randint(1, 2)
                 print(f'Creating {num_of_sections} sections for {course.course_name} for {semester}')
 
                 for _ in range(num_of_sections):
@@ -308,7 +309,7 @@ class Command(BaseCommand):
                     print(f'Creating section for {course.course_name} taught by {selected_faculty}')
                     CourseSection.objects.create(
                         course=course,
-                        available_seats=fake.random_int(min=10, max=20),
+                        available_seats=fake.random_int(min=25, max=50),
                         faculty=selected_faculty,
                         semester=semester,
                         timeslot=fake.random_element(elements=Timeslot.objects.all()),
@@ -421,16 +422,25 @@ class Command(BaseCommand):
 
     def delete_all_data(self, fake):
         #delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments
+        print("Deleting all users except: Super Admin, William Krasnov, and R Khusro, and departments...")
         User.objects.exclude(first_name='Super').exclude(last_name='Krasnov').exclude(first_name='R').delete()
+        print("Deleting all rooms...")
         Room.objects.all().delete()
+        print("Deleting all courses...")
         Course.objects.all().delete()
+        print("Deleting all sections...")
         CourseSection.objects.all().delete()
+        print("Deleting all enrollments...")
         Enrollment.objects.all().delete()
+        print("Deleting all Majors and Minors...")
         Major.objects.all().delete()
         Minor.objects.all().delete()
+        print("Deleting all Major and Minor Requirements...")
         MajorDegreeRequirements.objects.all().delete()
         MinorDegreeRequirements.objects.all().delete()
+        print("Deleting all Course Prereqs...")
         CoursePrereq.objects.all().delete()
+        print("deleting all faculty and student data...")
         Faculty_FullTime.objects.all().delete()
         Faculty_PartTime.objects.all().delete()
         Grad_Part_Time.objects.all().delete()

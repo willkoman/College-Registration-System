@@ -277,6 +277,9 @@ def faculty(request,user_id):
         context['office'] = Faculty_FullTime.objects.get(faculty=faculty).office
     except:
         context['office'] = Faculty_PartTime.objects.get(faculty=faculty).office
+
+    context['email'] = Login.objects.get(user=faculty.user).email
+    # context['phone'] = faculty.user.phone
     return render(request, 'faculty.html', context)
 
 def get_holidays():

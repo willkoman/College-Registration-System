@@ -12,7 +12,7 @@
     <p><strong>Specialty:</strong> {{ faculty.specialty }}</p>
     <p><strong>Type:</strong> {{ faculty.get_fac_type_display }}</p>
     <p><strong>Office:</strong> {{ office}}</p>
-    <p><strong>Email:</strong> {{ faculty.user.email }}</p>
-    <p><strong>Phone:</strong> {{ faculty.user.phone }}</p>
+    <p><strong>Email:</strong> {{ email }}</p>
+    {% comment %} <p><strong>Phone:</strong> {{ faculty.user.phone }}</p> {% endcomment %}
 </div>
 {% endblock %}

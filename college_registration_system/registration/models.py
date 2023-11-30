@@ -499,11 +499,6 @@ def create_faculty_history(sender, instance, created, **kwargs):
             semester=instance.semester
         ).update()
 
-        if instance.faculty.fac_type == 'FullTime':
-            Faculty_FullTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
-        else:
-            Faculty_PartTime.objects.filter(faculty=instance.faculty).update(num_of_courses=F('num_of_courses')+1)
-
 @receiver(post_delete, sender=CourseSection)
 def delete_faculty_history(sender, instance, **kwargs):
     try:

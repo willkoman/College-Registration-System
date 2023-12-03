@@ -28,7 +28,7 @@
                 <td>{{ section.semester }}</td>
                 <td>{{ section.available_seats }}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary edit-btn" data-toggle="modal" data-target="#editSectionModal" data-crn="{{ section.crn }}">Edit</button>
+                    {% comment %} <button class="btn btn-sm btn-primary edit-btn" data-toggle="modal" data-target="#editSectionModal" data-crn="{{ section.crn }}">Edit</button> {% endcomment %}
                     <button class="btn btn-sm btn-danger delete-btn" data-toggle="modal" data-target="#deleteSectionModal" data-crn="{{ section.crn }}">Delete</button>
                 </td>
             </tr>
@@ -66,7 +66,7 @@
                         <label for="addTimeslot">Timeslot</label>
                         <select class="form-control" id="addTimeslot" name="timeslot">
                             {% for timeslot in timeslots %}
-                            <option value="{{ timeslot }}">{{ timeslot }}</option>
+                            <option value="{{ timeslot.id }}">{{ timeslot }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -76,7 +76,7 @@
                         <label for="addRoom">Room</label>
                         <select class="form-control" id="addRoom" name="room">
                             {% for room in rooms %}
-                            <option value="{{ room }}">{{ room }}</option>
+                            <option value="{{ room.id }}">{{ room }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -86,7 +86,7 @@
                         <label for="addSemester">Semester</label>
                         <select class="form-control" id="addSemester" name="semester">
                             {% for semester in semesters %}
-                            <option value="{{ semester }}">{{ semester }}</option>
+                            <option value="{{ semester.id }}">{{ semester }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -133,7 +133,7 @@
                         <label for="addTimeslot">Timeslot</label>
                         <select class="form-control" id="addTimeslot" name="timeslot">
                             {% for timeslot in timeslots %}
-                            <option value="{{ timeslot }}">{{ timeslot }}</option>
+                            <option value="{{ timeslot.id }}">{{ timeslot }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -143,7 +143,7 @@
                         <label for="addRoom">Room</label>
                         <select class="form-control" id="addRoom" name="room">
                             {% for room in rooms %}
-                            <option value="{{ room }}">{{ room }}</option>
+                            <option value="{{ room.id }}">{{ room }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -231,6 +231,9 @@
         $('#addSectionForm').on('submit', function(e) {
             e.preventDefault();
             var formData = $(this).serialize();
+            //append course_id to form data
+
+
             $.ajax({
                 url: '/admin/add_section/' + $('#addCourseId').val(), // Endpoint to add section
                 type: 'POST',
@@ -261,9 +264,12 @@
                 }
             });
         });
-
+        $('.delete-btn').on('click', function() {
+            var crn = $(this).data('crn');
+            $('#deleteSectionModal #confirmDeleteBtn').data('crn', crn); // Set the CRN data attribute to the Confirm Delete button
+        });
         // Handle Delete Section
-        $('#confirmDeleteBtn').on('click', function() {
+        $('#deleteSectionModal #confirmDeleteBtn').on('click', function() {
             var crn = $(this).data('crn');
             $.ajax({
                 url: '/admin/delete_section/' + crn, // Endpoint to delete section

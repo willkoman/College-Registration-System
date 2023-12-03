@@ -3,10 +3,10 @@ from django.forms import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.db import transaction
-from django.db.models import Sum
+from django.contrib.auth.hashers import check_password, make_password
+from django.http import HttpResponseRedirect, JsonResponse
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from .forms import CourseForm, CourseSectionForm, UserCompositeForm
 from .models import (
     CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
@@ -356,6 +356,56 @@ def events_view(request):
     }
     return render(request, 'events.html', context)
 
+@login_required(login_url='user_login')
+def profile_view(request):
+    if not request.user.is_authenticated:
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    else:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+
+    context = {
+        'username': username,
+        'usertype': usertype,
+    }
+    context['user'] = user
+    context['login'] = Login.objects.get(user=user)
+    return render(request, 'profile.html', context)
+
+@login_required(login_url='user_login')
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        user.street = request.POST.get('street')
+        user.city = request.POST.get('city')
+        user.state = request.POST.get('state')
+        user.zip_code = request.POST.get('zip_code')
+        user.save()
+
+        # Handling password change
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if old_password and new_password and confirm_password:
+            userlogin = Login.objects.get(user=user)
+            if check_password(old_password, userlogin.password):
+                if new_password == confirm_password:
+                    userlogin.password = make_password(new_password)
+                    userlogin.save()
+                    update_session_auth_hash(request, userlogin)
+                    messages.success(request, 'Your password was successfully updated!')
+                else:
+                    messages.error(request, 'New passwords do not match.')
+            else:
+                messages.error(request, 'Old password is incorrect.')
+
+        messages.success(request, 'Your profile was successfully updated!')
+        return redirect('profile_view')
+    else:
+        return render(request, 'profile.html')
 
 #endregion
 #region student
@@ -836,11 +886,11 @@ def admin_sections_view(request, course_id):
     context['available_faculty'] = []
     availFac = Faculty.objects.filter(departments=context['course'].department)
     for faculty in availFac:
-        if faculty.fac_type == 'Fulltime':
+        if faculty.fac_type == 'FullTime':
             #add any faculty_fulltime where num_of_courses < 2
             if Faculty_FullTime.objects.get(faculty=faculty).num_of_courses < 2:
                 context['available_faculty'].append(faculty)
-        else:
+        elif faculty.fac_type == 'PartTime':
             #add any faculty_parttime where num_of_courses < 1
             if Faculty_PartTime.objects.get(faculty=faculty).num_of_courses < 1:
                 context['available_faculty'].append(faculty)
@@ -854,6 +904,8 @@ def add_section(request, course_id):
     if request.method == 'POST':
         form = CourseSectionForm(request.POST)
         if form.is_valid():
+            #add course_id to form
+            form.instance.course = Course.objects.get(course_id=course_id)
             form.save()
             messages.success(request, f'Section {form.cleaned_data.get("crn")} added successfully.',extra_tags='Success')
             return JsonResponse({'status': 'success', 'message': 'Section added successfully', 'redirect_url': '/admin/courses/'})

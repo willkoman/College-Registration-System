@@ -121,6 +121,7 @@ class StudentEditForm(forms.ModelForm):
     undergrad_student_type = forms.ChoiceField(choices=Undergraduate.UNDERGRAD_STUDENT_TYPE_CHOICES, required=False)
     grad_student_type = forms.ChoiceField(choices=Graduate.GRAD_STUDENT_TYPE_CHOICES, required=False)
     standing = forms.ChoiceField(choices=Undergrad_Full_Time.STANDING_CHOICES, required=False)
+    department = forms.ModelChoiceField(queryset=Department.objects.all(), required=True, widget=forms.Select(attrs={'class': 'form-control'}))
     # min_creds = forms.IntegerField(required=False)
     # max_creds = forms.IntegerField(required=False)
     creds_earned = forms.IntegerField(required=False)
@@ -130,8 +131,14 @@ class StudentEditForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ['major_id', 'minor_id', 'enrollment_year', 'student_type']
-
+        fields = ['major_id', 'minor_id', 'enrollment_year', 'student_type', 'department']
+        widgets = {
+            'major_id': forms.Select(attrs={'class': 'form-control'}),
+            'minor_id': forms.Select(attrs={'class': 'form-control'}),
+            'department': forms.Select(attrs={'class': 'form-control'}),
+            'enrollment_year': forms.NumberInput(attrs={'class': 'form-control'}),
+            'student_type': forms.Select(attrs={'class': 'form-control'}),
+        }
     def __init__(self, *args, **kwargs):
         super(StudentEditForm, self).__init__(*args, **kwargs)
         # Initialize the subtype fields if the instance is provided
@@ -139,6 +146,7 @@ class StudentEditForm(forms.ModelForm):
             if hasattr(self.instance, 'undergraduate'):
                 undergrad = self.instance.undergraduate
                 self.fields['undergrad_student_type'].initial = undergrad.undergrad_student_type
+                self.fields['department'].initial = undergrad.department
                 if undergrad.undergrad_student_type == 'FullTime':
                     full_time = undergrad.undergrad_full_time
                     self.fields['standing'].initial = full_time.standing
@@ -154,6 +162,7 @@ class StudentEditForm(forms.ModelForm):
             if hasattr(self.instance, 'graduate'):
                 graduate = self.instance.graduate
                 self.fields['grad_student_type'].initial = graduate.grad_student_type
+                self.fields['department'].initial = graduate.department
                 if graduate.grad_student_type == 'FullTime':
                     full_time = graduate.grad_full_time
                     self.fields['year'].initial = full_time.year
@@ -164,3 +173,21 @@ class StudentEditForm(forms.ModelForm):
                     self.fields['year'].initial = part_time.year
                     self.fields['qualifying_exam'].initial = part_time.qualifying_exam
                     self.fields['thesis'].initial = part_time.thesis
+    def save(self, commit=True):
+        student = super().save(commit=False)
+
+        # Handle other student fields...
+
+        if commit:
+            student.save()
+
+            # Handling the department for Undergraduate or Graduate
+            if self.cleaned_data['student_type'] == 'Undergraduate':
+                undergrad, created = Undergraduate.objects.get_or_create(student=student)
+                undergrad.department = self.cleaned_data['department']
+                undergrad.save()
+
+            elif self.cleaned_data['student_type'] == 'Graduate':
+                grad, created = Graduate.objects.get_or_create(student=student)
+                grad.department = self.cleaned_data['department']
+                grad.save()

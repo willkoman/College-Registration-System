@@ -34,7 +34,7 @@
 
 <!-- Edit Student Modal -->
 <div class="modal fade" id="editStudentModal" tabindex="-1" role="dialog" aria-labelledby="editStudentModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editStudentModalLabel">Edit Student</h5>
@@ -44,7 +44,7 @@
             </div>
             <div class="modal-body">
                 <form id="editStudentForm">
-                    <!-- Form fields will be populated via JavaScript -->
+                    <!-- Fields will be populated here by JavaScript -->
                 </form>
             </div>
             <div class="modal-footer">
@@ -61,47 +61,82 @@
     $(document).ready(function () {
         $('#studentsTable').DataTable();
 
-        $('.edit-btn').on('click', function() {
-            var studentId = $(this).data('studentid');
-            // AJAX call to fetch student data and populate the form
+        function fetchStudentData(studentId) {
             $.ajax({
-                url: '/edit_student/' + studentId, // Adjusted URL
-                type: "GET",
-                data: {
-                    studentId: studentId
-                },
+                url: '/admin/get_student_data/',  // Adjust the URL to your view
+                type: 'GET',
+                data: { 'studentID': studentId },
                 success: function(response) {
-                    if (response.status === 'success') {
-                        window.location.reload(); // Reload the page on success
-                    } else {
-                        alert('Error: ' + response.message); // Display error message
-                    }
-                }
-            });
+                    // Clear existing form data
+                    $('#editStudentForm').empty();
 
-        // Implement the edit grades button functionality when required
-        $('.edit-grades-btn').on('click', function() {
-            // Placeholder for future implementation
-        });
-        // Submitting the edit student form
-        $('#editStudentForm').on('submit', function(e) {
-            e.preventDefault();
-            var formData = $(this).serialize();
-            var studentId = $('#editStudentForm').find('[name="studentID"]').val(); // Assuming the form contains a hidden input for studentID
-            $.ajax({
-                url: '/edit_student/' + studentId,
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    window.location.reload(); // Reload the page or redirect as needed
+                    // Dynamically create form fields based on response
+                    $('#editStudentForm').append('<input type="hidden" name="studentID" value="' + response.studentID + '">');
+                    // Major, Minor, Enrollment Year, Student Type
+                    $('#editStudentForm').append(createSelectField('department_id', 'Department', response.department_id, response.departments));
+                    $('#editStudentForm').append(createSelectField('major_id', 'Major', response.major_id, response.majors));
+                    $('#editStudentForm').append(createSelectField('minor_id', 'Minor', response.minor_id, response.minors));
+                    $('#editStudentForm').append('<div class="form-group"><label>Enrollment Year</label><input type="number" class="form-control" name="enrollment_year" value="' + response.enrollment_year + '"></div>');
+                    $('#editStudentForm').append(createSelectField('student_type', 'Student Type', response.student_type, {'Undergraduate': 'Undergraduate', 'Graduate': 'Graduate'}));
+
+                    // Conditional fields based on student type
+                    if (response.student_type === 'Undergraduate') {
+                        $('#editStudentForm').append(createSelectField('undergrad_student_type', 'Undergrad Student Type', response.undergrad_student_type, {'FullTime': 'Full-Time', 'PartTime': 'Part-Time'}));
+                        $('#editStudentForm').append(createSelectField('standing', 'Standing', response.standing, {'Fresh': 'Freshman', 'Sophomore': 'Sophomore', 'Junior': 'Junior', 'Senior': 'Senior'}));
+                        $('#editStudentForm').append('<div class="form-group"><label>Credits Earned</label><input type="number" class="form-control" name="creds_earned" value="' + response.creds_earned + '"></div>');
+                    } else if (response.student_type === 'Graduate') {
+                        $('#editStudentForm').append(createSelectField('grad_student_type', 'Grad Student Type', response.grad_student_type, {'FullTime': 'Full-Time', 'PartTime': 'Part-Time'}));
+                        $('#editStudentForm').append('<div class="form-group"><label>Year</label><input type="number" class="form-control" name="year" value="' + response.year + '"></div>');
+                        $('#editStudentForm').append('<div class="form-group"><label>Qualifying Exam</label><input type="checkbox" class="form-control" name="qualifying_exam" ' + (response.qualifying_exam ? 'checked' : '') + '></div>');
+                        $('#editStudentForm').append('<div class="form-group"><label>Thesis</label><input type="checkbox" class="form-control" name="thesis" ' + (response.thesis ? 'checked' : '') + '></div>');
+                    }
+
+                    // Show the modal
+                    $('#editStudentModal').modal('show');
                 },
                 error: function(error) {
                     console.log(error);
-                    alert('Error updating student data');
+                    alert('Error fetching student data');
+                }
+            });
+        }
+
+        // Function to create a select field
+        function createSelectField(fieldName, fieldLabel, selectedValue, options) {
+            let fieldHtml = '<div class="form-group"><label>' + fieldLabel + '</label><select class="form-control" name="' + fieldName + '">';
+            for (let key in options) {
+                // Convert both to strings to ensure proper comparison
+                let isSelected = (key.toString() === selectedValue.toString()) ? ' selected' : '';
+                fieldHtml += '<option value="' + key + '"' + isSelected + '>' + options[key] + '</option>';
+            }
+            fieldHtml += '</select></div>';
+            return fieldHtml;
+        }
+        // Event listener for edit button click
+        $('.edit-btn').on('click', function() {
+            var studentId = $(this).data('studentid');
+            fetchStudentData(studentId);
+        });
+
+        // Handling form submission
+        $('#editStudentForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            var studentId = $('#editStudentForm input[name=studentID]').val();
+            $.ajax({
+                url: '/admin/update_student/'+studentId,  // Adjust the URL to your update view
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    $('#editStudentModal').modal('hide');
+                    location.reload();  // Or handle UI update without reloading
+                },
+                error: function(error) {
+                    console.log(error);
+                    alert('Error updating student');
                 }
             });
         });
     });
-
 </script>
 {% endblock %}

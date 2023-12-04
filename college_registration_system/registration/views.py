@@ -964,11 +964,12 @@ def list_students_view(request):
     context['students']= Student.objects.all()[:100]
     return render(request, 'admin/admin_students.html', context)
 @login_required(login_url='user_login')
-def get_student_data(request, student_id):
+def get_student_data(request):
     if not request.user.user.user_type == 'Admin':
         return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
-
-    student = get_object_or_404(Student, pk=student_id)
+    #get student_id from request
+    student_id = request.GET.get('studentID')
+    student = get_object_or_404(Student, studentID=student_id)
     data = {
         'studentID': student.studentID,
         'first_name': student.user.first_name,
@@ -980,27 +981,38 @@ def get_student_data(request, student_id):
         # Add additional fields as needed
     }
 
+    majors = {str(major.id): major.major_name for major in Major.objects.all()}
+    minors = {str(minor.id): minor.minor_name for minor in Minor.objects.all()}
+    departments = {str(department.department_id): department.department_name for department in Department.objects.all()}
+    # Add a 'None' option
+    majors[''] = 'None'
+    minors[''] = 'None'
+    departments[''] = 'None'
+    # Ensure the selected value is a string since JavaScript expects string keys
+    data['major_id'] = str(student.major_id.id if student.major_id else '')
+    data['minor_id'] = str(student.minor_id.id if student.minor_id else '')
+    data['majors'] = majors
+    data['minors'] = minors
+    data['departments'] = departments
     # Handle Undergraduate/Graduate specific data
     if student.student_type == 'Undergraduate':
         undergrad = Undergraduate.objects.filter(student=student).first()
         if undergrad:
             data['undergrad_student_type'] = undergrad.undergrad_student_type
+            data['department_id'] = undergrad.department.department_id if undergrad.department else None
             if undergrad.undergrad_student_type == 'FullTime':
                 full_time = Undergrad_Full_Time.objects.filter(student=undergrad).first()
                 if full_time:
                     data['standing'] = full_time.standing
-                    data['min_creds'] = full_time.min_creds
-                    data['max_creds'] = full_time.max_creds
             elif undergrad.undergrad_student_type == 'PartTime':
                 part_time = Undergrad_Part_Time.objects.filter(student=undergrad).first()
                 if part_time:
                     data['standing'] = part_time.standing
-                    data['min_creds'] = part_time.min_creds
-                    data['max_creds'] = part_time.max_creds
     elif student.student_type == 'Graduate':
         grad = Graduate.objects.filter(student=student).first()
         if grad:
             data['grad_student_type'] = grad.grad_student_type
+            data['department_id'] = grad.department.department_id if grad.department else None
             if grad.grad_student_type == 'FullTime':
                 full_time = Grad_Full_Time.objects.filter(student=grad).first()
                 if full_time:
@@ -1011,52 +1023,76 @@ def get_student_data(request, student_id):
                 if part_time:
                     data['year'] = part_time.year
                     data['credits_earned'] = part_time.credits_earned
-
+    print("Data:", data)
     return JsonResponse(data)
 
 @login_required(login_url='user_login')
 def update_student_view(request, student_id):
-    if not request.user.user.user_type == 'Admin':
-        messages.error(request, "You are not authorized to access this resource.")
-        return redirect('/homepage/')
-
-    student = get_object_or_404(Student, pk=student_id)
+    student = get_object_or_404(Student, studentID=student_id)
     if request.method == 'POST':
         form = StudentEditForm(request.POST, instance=student)
         if form.is_valid():
-            student = form.save()
-            student_type = form.cleaned_data.get('student_type')
-            undergrad_student_type = form.cleaned_data.get('undergrad_student_type')
-            grad_student_type = form.cleaned_data.get('grad_student_type')
+            form.save()
 
-            # Handle Undergraduate and Graduate student types
+            # Update/Create Undergraduate/Graduate instances
+            student_type = form.cleaned_data['student_type']
             if student_type == 'Undergraduate':
-                undergrad, _ = Undergraduate.objects.get_or_create(student=student)
-                if undergrad_student_type == 'FullTime':
-                    Undergrad_Full_Time.objects.get_or_create(student=undergrad)
+                undergrad, created = Undergraduate.objects.update_or_create(
+                    student=student,
+                    defaults={'department': form.cleaned_data['department'],
+                              'undergrad_student_type': form.cleaned_data['undergrad_student_type']}
+                )
+                if undergrad.undergrad_student_type == 'FullTime':
+                    Undergrad_Full_Time.objects.update_or_create(
+                        student=undergrad,
+                        defaults={'standing': form.cleaned_data['standing'],
+                                  'creds_earned': form.cleaned_data['creds_earned']}
+                    )
                     Undergrad_Part_Time.objects.filter(student=undergrad).delete()
-                elif undergrad_student_type == 'PartTime':
-                    Undergrad_Part_Time.objects.get_or_create(student=undergrad)
+                elif undergrad.undergrad_student_type == 'PartTime':
+                    Undergrad_Part_Time.objects.update_or_create(
+                        student=undergrad,
+                        defaults={'standing': form.cleaned_data['standing'],
+                                  'creds_earned': form.cleaned_data['creds_earned']}
+                    )
                     Undergrad_Full_Time.objects.filter(student=undergrad).delete()
                 Graduate.objects.filter(student=student).delete()
+
             elif student_type == 'Graduate':
-                grad, _ = Graduate.objects.get_or_create(student=student)
-                if grad_student_type == 'FullTime':
-                    Grad_Full_Time.objects.get_or_create(student=grad)
+                grad, created = Graduate.objects.update_or_create(
+                    student=student,
+                    defaults={'department': form.cleaned_data['department'],
+                              'program': form.cleaned_data['program'],
+                              'grad_student_type': form.cleaned_data['grad_student_type']}
+                )
+                if grad.grad_student_type == 'FullTime':
+                    Grad_Full_Time.objects.update_or_create(
+                        student=grad,
+                        defaults={'year': form.cleaned_data['year'],
+                                  'credits_earned': form.cleaned_data['creds_earned'],
+                                  'qualifying_exam': form.cleaned_data['qualifying_exam'],
+                                  'thesis': form.cleaned_data['thesis']}
+                    )
                     Grad_Part_Time.objects.filter(student=grad).delete()
-                elif grad_student_type == 'PartTime':
-                    Grad_Part_Time.objects.get_or_create(student=grad)
+                elif grad.grad_student_type == 'PartTime':
+                    Grad_Part_Time.objects.update_or_create(
+                        student=grad,
+                        defaults={'year': form.cleaned_data['year'],
+                                  'credits_earned': form.cleaned_data['creds_earned'],
+                                  'qualifying_exam': form.cleaned_data['qualifying_exam'],
+                                  'thesis': form.cleaned_data['thesis']}
+                    )
                     Grad_Full_Time.objects.filter(student=grad).delete()
                 Undergraduate.objects.filter(student=student).delete()
 
             messages.success(request, "Student updated successfully.")
-            return redirect('list_students_view')
+            return redirect('admin_students_view')
         else:
             messages.error(request, "Error updating student.")
     else:
         form = StudentEditForm(instance=student)
 
-    return render(request, 'admin/update_student.html', {'form': form, 'student_id': student_id})
+    return JsonResponse({'status': 'error', 'message': f'Method not allowed. {form.errors}'}, status=405)
 
 @login_required(login_url='user_login')
 def get_student_grades(request,student_id):
@@ -1087,6 +1123,8 @@ def update_gradebook_student(request):
     else:
         return JsonResponse({'status': 'error', 'error_message': 'Invalid request'}, status=400)
 #endregion
+
+
 #region faculty
 #### FACULTY VIEWS ####
 

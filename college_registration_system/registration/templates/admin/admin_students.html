@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-3">
+    <h2>Students List</h2>
+    <table id="studentsTable" class="table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Major</th>
+                <th>Minor</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.studentID }}</td>
+                <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
+                <td>{{ student.major_id }}</td>
+                <td>{{ student.minor_id }}</td>
+                <td>
+                    <button class="btn btn-primary edit-btn" data-toggle="modal" data-target="#editStudentModal" data-studentid="{{ student.studentID }}">Edit</button>
+                    <button class="btn btn-secondary edit-grades-btn" onclick="window.location.href='/admin/student/gradebook/{{ student.studentID }}'">Edit Grades</button>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1" role="dialog" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editStudentModalLabel">Edit Student</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm">
+                    <!-- Form fields will be populated via JavaScript -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" form="editStudentForm" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function () {
+        $('#studentsTable').DataTable();
+
+        $('.edit-btn').on('click', function() {
+            var studentId = $(this).data('studentid');
+            // AJAX call to fetch student data and populate the form
+            $.ajax({
+                url: '/edit_student/' + studentId, // Adjusted URL
+                type: "GET",
+                data: {
+                    studentId: studentId
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        window.location.reload(); // Reload the page on success
+                    } else {
+                        alert('Error: ' + response.message); // Display error message
+                    }
+                }
+            });
+
+        // Implement the edit grades button functionality when required
+        $('.edit-grades-btn').on('click', function() {
+            // Placeholder for future implementation
+        });
+        // Submitting the edit student form
+        $('#editStudentForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            var studentId = $('#editStudentForm').find('[name="studentID"]').val(); // Assuming the form contains a hidden input for studentID
+            $.ajax({
+                url: '/edit_student/' + studentId,
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    window.location.reload(); // Reload the page or redirect as needed
+                },
+                error: function(error) {
+                    console.log(error);
+                    alert('Error updating student data');
+                }
+            });
+        });
+    });
+
+</script>
+{% endblock %}

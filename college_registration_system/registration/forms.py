@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Major, Minor, User, Login, Student, Faculty, Admin, Department, CourseSection
+from .models import Course, Major, Minor, User, Login, Student, Faculty, Admin, Department, CourseSection, Undergraduate,Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,Undergrad_Part_Time
 from django.contrib.admin.forms import AdminAuthenticationForm
 
 class LoginForm(forms.ModelForm):
@@ -115,3 +115,52 @@ class CourseSectionForm(forms.ModelForm):
             'faculty': forms.Select(attrs={'class': 'form-control'}),
             'available_seats': forms.NumberInput(attrs={'class': 'form-control'}),
         }
+
+class StudentEditForm(forms.ModelForm):
+    # Additional fields for subtypes
+    undergrad_student_type = forms.ChoiceField(choices=Undergraduate.UNDERGRAD_STUDENT_TYPE_CHOICES, required=False)
+    grad_student_type = forms.ChoiceField(choices=Graduate.GRAD_STUDENT_TYPE_CHOICES, required=False)
+    standing = forms.ChoiceField(choices=Undergrad_Full_Time.STANDING_CHOICES, required=False)
+    # min_creds = forms.IntegerField(required=False)
+    # max_creds = forms.IntegerField(required=False)
+    creds_earned = forms.IntegerField(required=False)
+    year = forms.IntegerField(required=False)
+    qualifying_exam = forms.BooleanField(required=False)
+    thesis = forms.BooleanField(required=False)
+
+    class Meta:
+        model = Student
+        fields = ['major_id', 'minor_id', 'enrollment_year', 'student_type']
+
+    def __init__(self, *args, **kwargs):
+        super(StudentEditForm, self).__init__(*args, **kwargs)
+        # Initialize the subtype fields if the instance is provided
+        if self.instance.pk:
+            if hasattr(self.instance, 'undergraduate'):
+                undergrad = self.instance.undergraduate
+                self.fields['undergrad_student_type'].initial = undergrad.undergrad_student_type
+                if undergrad.undergrad_student_type == 'FullTime':
+                    full_time = undergrad.undergrad_full_time
+                    self.fields['standing'].initial = full_time.standing
+                    # self.fields['min_creds'].initial = full_time.min_creds
+                    # self.fields['max_creds'].initial = full_time.max_creds
+                    self.fields['creds_earned'].initial = full_time.creds_earned
+                elif undergrad.undergrad_student_type == 'PartTime':
+                    part_time = undergrad.undergrad_part_time
+                    self.fields['standing'].initial = part_time.standing
+                    # self.fields['min_creds'].initial = part_time.min_creds
+                    # self.fields['max_creds'].initial = part_time.max_creds
+                    self.fields['creds_earned'].initial = part_time.creds_earned
+            if hasattr(self.instance, 'graduate'):
+                graduate = self.instance.graduate
+                self.fields['grad_student_type'].initial = graduate.grad_student_type
+                if graduate.grad_student_type == 'FullTime':
+                    full_time = graduate.grad_full_time
+                    self.fields['year'].initial = full_time.year
+                    self.fields['qualifying_exam'].initial = full_time.qualifying_exam
+                    self.fields['thesis'].initial = full_time.thesis
+                elif graduate.grad_student_type == 'PartTime':
+                    part_time = graduate.grad_part_time
+                    self.fields['year'].initial = part_time.year
+                    self.fields['qualifying_exam'].initial = part_time.qualifying_exam
+                    self.fields['thesis'].initial = part_time.thesis

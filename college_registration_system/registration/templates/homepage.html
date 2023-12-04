@@ -53,10 +53,11 @@
         <div class="col-md-6 mb-3">
             {% if usertype == "Student" %}
                 <a href="/degreeAudit/" class="btn btn-danger btn-block btn-lg large-button" onclick="showLoadingModal()">Degree Audit</a>
-            {% else %}
+            {% elif usertype != None%}
                 <a href="/profile/" class="btn btn-danger btn-block btn-lg large-button" onclick="showLoadingModal()">My Profile</a>
+            {% else %}
+            <a href="#" class="btn btn-info btn-block btn-lg large-button disabled" onclick="showLoadingModal()"> My Profile </a>
             {% endif %}
-            {% comment %} <a href="#" class="btn btn-info btn-block btn-lg large-button disabled" onclick="showLoadingModal()"> TODO </a> {% endcomment %}
         </div>
         <!-- Add more button columns as needed -->
     </div>

@@ -278,7 +278,7 @@
                     window.location.reload();
                 },
                 error: function() {
-                    alert('Error deleting section');
+                    alert(response.responseJSON.message);
                 }
             });
         });

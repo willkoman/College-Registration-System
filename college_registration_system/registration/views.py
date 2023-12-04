@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from .forms import CourseForm, CourseSectionForm, UserCompositeForm
+from .forms import CourseForm, CourseSectionForm, StudentEditForm, UserCompositeForm
 from .models import (
     CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
     Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime,
@@ -950,6 +950,142 @@ def delete_section(request,crn):
     messages.success(request, f'Section {section} deleted successfully.', extra_tags='Success')
 
     return JsonResponse({'status': 'success', 'message': f'Section {section} deleted successfully.'})
+
+@login_required(login_url='user_login')
+def list_students_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, "You are not authorized to view this page.")
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    #only get top 100
+    context['students']= Student.objects.all()[:100]
+    return render(request, 'admin/admin_students.html', context)
+@login_required(login_url='user_login')
+def get_student_data(request, student_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    student = get_object_or_404(Student, pk=student_id)
+    data = {
+        'studentID': student.studentID,
+        'first_name': student.user.first_name,
+        'last_name': student.user.last_name,
+        'major_id': student.major_id.id if student.major_id else None,
+        'minor_id': student.minor_id.id if student.minor_id else None,
+        'enrollment_year': student.enrollment_year,
+        'student_type': student.student_type,
+        # Add additional fields as needed
+    }
+
+    # Handle Undergraduate/Graduate specific data
+    if student.student_type == 'Undergraduate':
+        undergrad = Undergraduate.objects.filter(student=student).first()
+        if undergrad:
+            data['undergrad_student_type'] = undergrad.undergrad_student_type
+            if undergrad.undergrad_student_type == 'FullTime':
+                full_time = Undergrad_Full_Time.objects.filter(student=undergrad).first()
+                if full_time:
+                    data['standing'] = full_time.standing
+                    data['min_creds'] = full_time.min_creds
+                    data['max_creds'] = full_time.max_creds
+            elif undergrad.undergrad_student_type == 'PartTime':
+                part_time = Undergrad_Part_Time.objects.filter(student=undergrad).first()
+                if part_time:
+                    data['standing'] = part_time.standing
+                    data['min_creds'] = part_time.min_creds
+                    data['max_creds'] = part_time.max_creds
+    elif student.student_type == 'Graduate':
+        grad = Graduate.objects.filter(student=student).first()
+        if grad:
+            data['grad_student_type'] = grad.grad_student_type
+            if grad.grad_student_type == 'FullTime':
+                full_time = Grad_Full_Time.objects.filter(student=grad).first()
+                if full_time:
+                    data['year'] = full_time.year
+                    data['credits_earned'] = full_time.credits_earned
+            elif grad.grad_student_type == 'PartTime':
+                part_time = Grad_Part_Time.objects.filter(student=grad).first()
+                if part_time:
+                    data['year'] = part_time.year
+                    data['credits_earned'] = part_time.credits_earned
+
+    return JsonResponse(data)
+
+@login_required(login_url='user_login')
+def update_student_view(request, student_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, "You are not authorized to access this resource.")
+        return redirect('/homepage/')
+
+    student = get_object_or_404(Student, pk=student_id)
+    if request.method == 'POST':
+        form = StudentEditForm(request.POST, instance=student)
+        if form.is_valid():
+            student = form.save()
+            student_type = form.cleaned_data.get('student_type')
+            undergrad_student_type = form.cleaned_data.get('undergrad_student_type')
+            grad_student_type = form.cleaned_data.get('grad_student_type')
+
+            # Handle Undergraduate and Graduate student types
+            if student_type == 'Undergraduate':
+                undergrad, _ = Undergraduate.objects.get_or_create(student=student)
+                if undergrad_student_type == 'FullTime':
+                    Undergrad_Full_Time.objects.get_or_create(student=undergrad)
+                    Undergrad_Part_Time.objects.filter(student=undergrad).delete()
+                elif undergrad_student_type == 'PartTime':
+                    Undergrad_Part_Time.objects.get_or_create(student=undergrad)
+                    Undergrad_Full_Time.objects.filter(student=undergrad).delete()
+                Graduate.objects.filter(student=student).delete()
+            elif student_type == 'Graduate':
+                grad, _ = Graduate.objects.get_or_create(student=student)
+                if grad_student_type == 'FullTime':
+                    Grad_Full_Time.objects.get_or_create(student=grad)
+                    Grad_Part_Time.objects.filter(student=grad).delete()
+                elif grad_student_type == 'PartTime':
+                    Grad_Part_Time.objects.get_or_create(student=grad)
+                    Grad_Full_Time.objects.filter(student=grad).delete()
+                Undergraduate.objects.filter(student=student).delete()
+
+            messages.success(request, "Student updated successfully.")
+            return redirect('list_students_view')
+        else:
+            messages.error(request, "Error updating student.")
+    else:
+        form = StudentEditForm(instance=student)
+
+    return render(request, 'admin/update_student.html', {'form': form, 'student_id': student_id})
+
+@login_required(login_url='user_login')
+def get_student_grades(request,student_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, "You are not authorized to access this resource.")
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    context['student'] = Student.objects.get(studentID=student_id)
+    context['enrollments'] = Enrollment.objects.filter(student=context['student'])
+    return render(request, 'admin/admin_student_grades.html', context)
+
+
+@login_required(login_url='user_login')
+def update_gradebook_student(request):
+    if request.method == 'POST':
+        enrollment_ids = request.POST.getlist('enrollment_id[]')
+        grades = request.POST.getlist('grades[]')
+
+        for enrollment_id, grade in zip(enrollment_ids, grades):
+            enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+            enrollment.grade = grade
+            enrollment.save()
+
+        return JsonResponse({'status': 'success'})
+    else:
+        return JsonResponse({'status': 'error', 'error_message': 'Invalid request'}, status=400)
 #endregion
 #region faculty
 #### FACULTY VIEWS ####

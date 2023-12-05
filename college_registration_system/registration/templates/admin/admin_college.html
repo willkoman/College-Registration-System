@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+{% block style %}
+<style>
+    .large-button {
+        padding: 40px 40px; /* Increase top and bottom padding */
+        font-size: 1.5em; /* Optional: Increase font size for better visibility */
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div>
+        <a href="{% url 'admin_view' %}" class="btn btn-primary mt-4">Back to Admin</a>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="text-center">College Management</h1>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'manage_buildings' %}" class="btn btn-primary btn-lg btn-block large-button">Buildings</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'manage_buildings' %}" class="btn btn-success btn-lg btn-block large-button disabled">Timeslots</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'manage_buildings' %}" class="btn btn-warning btn-lg btn-block large-button disabled">Majors / Minors</a>
+        </div>
+    </div>
+</div>
+
+    {% endblock %}
+    ```

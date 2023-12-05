@@ -8,9 +8,9 @@ from django.core.serializers import serialize
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from .forms import CourseForm, CourseSectionForm, FacultyEditForm, StudentEditForm, UserCompositeForm
+from .forms import BuildingForm, CourseForm, CourseSectionForm, FacultyEditForm, RoomForm, StudentEditForm, UserCompositeForm
 from .models import (
-    CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
+    Building, CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
     Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime,
     Faculty_PartTime, Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,
     Undergrad_Part_Time, Undergraduate, Major,Minor, MajorDegreeRequirements,MinorDegreeRequirements
@@ -1154,14 +1154,18 @@ def get_faculty_data(request, user_id):
     if not request.user.user.user_type == 'Admin':
         return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
     faculty = get_object_or_404(Faculty, user_id=user_id)
+    rank_choices = [{'value': choice[0], 'display': choice[1]} for choice in Faculty.RANK_CHOICES]
+    fac_type_choices = [{'value': choice[0], 'display': choice[1]} for choice in Faculty.FAC_TYPE_CHOICES]
     data = {
         'id': faculty.user.id,
         'first_name': faculty.user.first_name,
         'last_name': faculty.user.last_name,
         'email': Login.objects.get(user=faculty.user).email,
         'rank': faculty.rank,
-        'specialty': faculty.specialty,
         'fac_type': faculty.fac_type,
+        'rank_choices': rank_choices,
+        'fac_type_choices': fac_type_choices,
+        'specialty': faculty.specialty,
         'department': list(faculty.departments.all().values('department_id')),
         # Additional fields for FullTime/PartTime
         'num_of_courses': faculty.faculty_fulltime.num_of_courses if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.num_of_courses,
@@ -1204,6 +1208,64 @@ def update_faculty_view(request, user_id):
         form = FacultyEditForm(instance=faculty)
     return render(request, 'admin/admin_facultys.html', {'form': form})
 
+def admin_college_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    return render(request, 'admin/admin_college.html', context)
+
+def manage_buildings(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    buildingForm = BuildingForm()
+    context['buildings'] = Building.objects.all()
+    context['buildingForm'] = buildingForm
+    return render(request, 'admin/college/building.html', context)
+
+def add_building(request):
+    if request.method == 'POST':
+        form = BuildingForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Building {form.cleaned_data.get("bldg_name")} added successfully.',extra_tags='Success')
+            return redirect('manage_buildings')  # Redirect to building management page
+    else:
+        form = BuildingForm()
+    return render(request, 'admin/college/building.html', {'form': form})
+
+def manage_rooms(request, building_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    room_form = RoomForm()
+    context['building'] = Building.objects.get(pk=building_id)
+    context['rooms'] = Room.objects.filter(building=context['building'])
+    context['room_form'] = room_form
+    return render(request, 'admin/college/room.html', context)
+
+def add_room(request, building_id):
+    if request.method == 'POST':
+        form = RoomForm(request.POST)
+        if form.is_valid():
+            # Add building_id to form
+            form.instance.building = Building.objects.get(pk=building_id)
+            form.save()
+            messages.success(request, f'Room {form.cleaned_data.get("room_no")} added successfully.',extra_tags='Success')
+            return redirect('manage_rooms', building_id=building_id)
+    return render(request, 'admin/college/room.html', {'form': form})
 #endregion
 
 

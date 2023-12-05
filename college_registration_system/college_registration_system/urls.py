@@ -70,6 +70,14 @@ urlpatterns = [
     path('admin/get_faculty_data/<str:user_id>', views.get_faculty_data, name='admin_get_faculty_data'),
     path('admin/update_faculty/<str:user_id>', views.update_faculty_view, name='admin_update_faculty'),
 
+    path('admin/college/', views.admin_college_view, name='admin_college_view'),
+
+    path('admin/manage_buildings/', views.manage_buildings, name='manage_buildings'),
+    path('admin/manage_rooms/<int:building_id>/', views.manage_rooms, name='manage_rooms'),
+    path('admin/addBuilding/', views.add_building, name='add_building'),
+    path('admin/add_room/<int:building_id>', views.add_room, name='add_room'),
+
+
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
     path('add_user/', views.add_user, name='add_user'),

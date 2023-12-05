@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    {% comment %} back to admin/manage_buildings/ {% endcomment %}
+    <h2>Room Management - {{ building.bldg_name }}</h2>
+    <div>
+    <a href="{% url 'manage_buildings' %}" class="btn btn-primary mt-4">Back to Buildings</a>
+    </div>
+    <button class="btn btn-success mt-4 mb-4" data-toggle="modal" data-target="#addRoomModal">Add Room</button>
+
+    <table class="table mt-4" id="roomTable">
+        <thead>
+            <tr>
+                <th>Room Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+            <tr>
+                <td>{{ room.room_no }}</td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Room Modal -->
+<div class="modal fade" id="addRoomModal" tabindex="-1" role="dialog" aria-labelledby="addRoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="{% url 'add_room' building.pk %}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRoomModalLabel">Add New Room</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ room_form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#roomTable').DataTable({responsive:true});
+    });
+</script>
+{% endblock %}
+```

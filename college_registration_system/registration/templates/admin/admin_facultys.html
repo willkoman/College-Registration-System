@@ -3,7 +3,10 @@
 
 {% block content %}
 <div class="container mt-3">
-    <h2>Faculty List</h2>
+    <div>
+        <a href="{% url 'admin_view' %}" class="btn btn-primary mt-4">Back to Admin</a>
+    </div>
+    <h2 class="mt-4">Faculty List</h2>
     <table id="facultyTable" class="table">
         <thead>
             <tr>
@@ -110,9 +113,21 @@
                     $('#editFacultyForm').append('<div class="form-group"><label for="first_name">First Name</label><input type="text" class="form-control" name="first_name" value="' + response.first_name + '"></div>');
                     $('#editFacultyForm').append('<div class="form-group"><label for="last_name">Last Name</label><input type="text" class="form-control" name="last_name" value="' + response.last_name + '"></div>');
                     $('#editFacultyForm').append('<div class="form-group"><label for="email">Email</label><input type="email" class="form-control" name="email" value="' + response.email + '"></div>');
-                    $('#editFacultyForm').append('<div class="form-group"><label for="rank">Rank</label><input type="text" class="form-control" name="rank" value="' + response.rank + '"></div>');
+                    var rankHtml = '<div class="form-group"><label for="rank">Rank</label><select class="form-control" name="rank">';
+                        response.rank_choices.forEach(function(rank) {
+                            var isSelected = (rank.value === response.rank) ? ' selected' : '';
+                            rankHtml += '<option value="' + rank.value + '"' + isSelected + '>' + rank.display + '</option>';
+                        });
+                        rankHtml += '</select></div>';
+                        $('#editFacultyForm').append(rankHtml);
                     $('#editFacultyForm').append('<div class="form-group"><label for="specialty">Specialty</label><input type="text" class="form-control" name="specialty" value="' + response.specialty + '"></div>');
-                    $('#editFacultyForm').append('<div class="form-group"><label for="fac_type">Type</label><input type="text" class="form-control" name="fac_type" value="' + response.fac_type + '"></div>');
+                    var typeHtml = '<div class="form-group"><label for="fac_type">Type</label><select class="form-control" name="fac_type">';
+                        response.fac_type_choices.forEach(function(type) {
+                            var isSelected = (type.value === response.fac_type) ? ' selected' : '';
+                            typeHtml += '<option value="' + type.value + '"' + isSelected + '>' + type.display + '</option>';
+                        });
+                        typeHtml += '</select></div>';
+                        $('#editFacultyForm').append(typeHtml);
                     // Office Selector
                     var officeSelectHtml = '<div class="form-group"><label for="office">Office</label><select class="form-control" name="office" id="office">';
                         response.rooms.forEach(function(room) {

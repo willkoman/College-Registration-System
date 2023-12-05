@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
 <div>
-    <button class="btn btn-primary" onclick="window.location.href='/admin/'">Back</button>
+    <a href="{% url 'admin_view' %}" class="btn btn-primary mt-4">Back to Admin</a>
 </div>
 <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addCourseModal">
     Add Course

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Building Management</h2>
+    <div>
+        <a href="{% url 'admin_college_view' %}" class="btn btn-primary mt-4">Back to College Management</a>
+    </div>
+    <button class="btn btn-success mt-4 mb-4" data-toggle="modal" data-target="#addBuildingModal">Add Building</button>
+
+    <table class="table mt-4" id="buildingTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Manage Rooms</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for building in buildings %}
+            <tr>
+                <td>{{ building.bldg_name }}</td>
+                <td>{{ building.get_bldg_type_display }}</td>
+                <td>
+                    <a href="{% url 'manage_rooms' building.pk %}" class="btn btn-sm btn-info">Manage Rooms</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Building Modal -->
+<div class="modal fade" id="addBuildingModal" tabindex="-1" role="dialog" aria-labelledby="addBuildingModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="{% url 'add_building' %}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBuildingModalLabel">Add New Building</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ buildingForm.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add Building</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#buildingTable').DataTable({responsive: true});
+    });
+</script>
+{% endblock %}
+```

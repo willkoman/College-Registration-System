@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Major, Minor, Room, User, Login, Student, Faculty, Admin, Department, CourseSection, Undergraduate,Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,Undergrad_Part_Time
+from .models import Building, Course, Major, Minor, Room, User, Login, Student, Faculty, Admin, Department, CourseSection, Undergraduate,Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,Undergrad_Part_Time
 from django.contrib.admin.forms import AdminAuthenticationForm
 
 class LoginForm(forms.ModelForm):
@@ -210,4 +210,22 @@ class FacultyEditForm(forms.ModelForm):
             'fac_type': forms.Select(attrs={'class': 'form-control'}),
             'num_of_courses': forms.NumberInput(attrs={'class': 'form-control'}),
             'office': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+class BuildingForm(forms.ModelForm):
+    class Meta:
+        model = Building
+        fields = ['bldg_name', 'bldg_type']
+        widget = {
+            'bldg_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'bldg_type': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+
+class RoomForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = ['room_no']
+        widgets = {
+            'room_no': forms.NumberInput(attrs={'class': 'form-control'}),
         }

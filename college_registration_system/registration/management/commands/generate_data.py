@@ -158,7 +158,11 @@ class Command(BaseCommand):
             )
             user.save()
             s=Student.objects.get(user=user)
-            s.student_type=random.choice(['Undergraduate', 'Graduate'])
+            # s.student_type=random.choice(['Undergraduate', 'Graduate'])
+            if fake.random_int(min=0,max=4) == 0:
+                s.student_type='Graduate'
+            else:
+                s.student_type='Undergraduate'
             s.major_id=Major.objects.order_by('?').first()
             s.enrollment_year=fake.random_int(min=2015, max=2020)
             # s.studentID=fake.unique.random_int(min=7000005, max=7999999)
@@ -423,7 +427,7 @@ class Command(BaseCommand):
     def delete_all_data(self, fake):
         #delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments
         print("Deleting all users except: Super Admin, William Krasnov, and R Khusro, and departments...")
-        User.objects.exclude(first_name='Super').exclude(last_name='Krasnov').exclude(first_name='R').delete()
+        User.objects.exclude(first_name='Super').exclude(last_name='Krasnov').exclude(first_name='R').exclude(first_name='Statistics').exclude(first_name='Stats').delete()
         print("Deleting all rooms...")
         Room.objects.all().delete()
         print("Deleting all courses...")

@@ -20,6 +20,7 @@ class User(models.Model):
         ('Admin', 'Admin'),
         ('Student', 'Student'),
         ('Faculty', 'Faculty'),
+        ('Statistics','Statistics')
     ]
     # id = models.AutoField(primary_key=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -72,16 +73,24 @@ def create_or_update_user_login(sender, instance, created, **kwargs):
             #delete other subtypes
             Student.objects.filter(user_id=instance.id).delete()
             Faculty.objects.filter(user_id=instance.id).delete()
+            StatisticsOffice.objects.filter(user_id=instance.id).delete()
         elif instance.user_type == 'Student':
             Student.objects.get_or_create(user_id=instance.id)
             #delete other subtypes
             Admin.objects.filter(user_id=instance.id).delete()
             Faculty.objects.filter(user_id=instance.id).delete()
+            StatisticsOffice.objects.filter(user_id=instance.id).delete()
         elif instance.user_type == 'Faculty':
             Faculty.objects.get_or_create(user_id=instance.id)
             #delete other subtypes
             Admin.objects.filter(user_id=instance.id).delete()
             Student.objects.filter(user_id=instance.id).delete()
+            StatisticsOffice.objects.filter(user_id=instance.id).delete()
+        elif instance.user_type == 'Statistics':
+            StatisticsOffice.objects.get_or_create(user_id=instance.id)
+            Student.objects.filter(user_id=instance.id).delete()
+            Faculty.objects.filter(user_id=instance.id).delete()
+            Admin.objects.filter(user_id=instance.id).delete()
     except:
         pass
 

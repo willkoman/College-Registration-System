@@ -41,6 +41,7 @@
         <h2 style='color:var(--accent-color)'>Feel free to browse our schedule and directory</h2>
     {% endif %}
     <div class="row mt-4">
+
         <div class="col-md-6 mb-3">
             <a href="/calendar/" class="btn btn-primary btn-block btn-lg large-button" onclick="showLoadingModal()">Academic Calendar</a>
         </div>
@@ -50,6 +51,7 @@
         <div class="col-md-6 mb-3">
             <a href="/events/" class="btn btn-success btn-block btn-lg large-button" onclick="showLoadingModal()">Events</a>
         </div>
+        {% if usertype != "Statistics" %}
         <div class="col-md-6 mb-3">
             {% if usertype == "Student" %}
                 <a href="/degreeAudit/" class="btn btn-danger btn-block btn-lg large-button" onclick="showLoadingModal()">Degree Audit</a>
@@ -59,6 +61,11 @@
             <a href="#" class="btn btn-info btn-block btn-lg large-button disabled" onclick="showLoadingModal()"> My Profile </a>
             {% endif %}
         </div>
+        {% else %}
+        <div class="col-md-6 mb-3">
+            <a href="/statisticsoffice/" class="btn btn-danger btn-block btn-lg large-button" onclick="showLoadingModal()">Statistics Office</a>
+        </div>
+        {% endif %}
         <!-- Add more button columns as needed -->
     </div>
 

@@ -13,7 +13,8 @@ from .models import (
     Building, CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
     Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime,
     Faculty_PartTime, Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,
-    Undergrad_Part_Time, Undergraduate, Major,Minor, MajorDegreeRequirements,MinorDegreeRequirements
+    Undergrad_Part_Time, Undergraduate, Major,Minor, MajorDegreeRequirements,MinorDegreeRequirements,
+    StatisticsOffice
 )
 from django.contrib import messages
 import requests
@@ -1266,6 +1267,52 @@ def add_room(request, building_id):
             messages.success(request, f'Room {form.cleaned_data.get("room_no")} added successfully.',extra_tags='Success')
             return redirect('manage_rooms', building_id=building_id)
     return render(request, 'admin/college/room.html', {'form': form})
+#endregion
+
+#region statistics
+
+@login_required(login_url='user_login')
+def statistics_view(request):
+    if not request.user.user.user_type == 'Statistics':
+        messages.error(request, f'You are not authorized to view this page.', extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    return render(request, 'statistics_view.html', context)
+from django.shortcuts import render
+from .models import Student, Major, Minor, Department
+from django.db.models import Count, Q
+@login_required(login_url='user_login')
+def college_statistics_view(request):
+    if not request.user.user.user_type == 'Statistics':
+        messages.error(request, f'You are not authorized to view this page.', extra_tags='Error')
+        return redirect('/homepage/')
+    # Undergraduates vs Graduates
+    # Pie chart data
+    undergrad_count = Student.objects.filter(student_type='Undergraduate').count()
+    grad_count = Student.objects.filter(student_type='Graduate').count()
+    fulltime_count = Student.objects.filter(undergraduate__undergrad_student_type='FullTime').count() + Student.objects.filter(graduate__grad_student_type='FullTime').count()
+    parttime_count = Student.objects.filter(undergraduate__undergrad_student_type='PartTime').count() + Student.objects.filter(graduate__grad_student_type='PartTime').count()
+
+    # Bar chart data
+    major_counts = Major.objects.annotate(student_count=Count('student')).values('major_name', 'student_count')
+    minor_counts = Minor.objects.annotate(student_count=Count('student')).values('minor_name', 'student_count')
+    grad_department_counts = Department.objects.annotate(grad_count=Count('graduate')).values('department_name', 'grad_count')
+
+    context = {
+        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+        'undergrad_count': undergrad_count,
+        'grad_count': grad_count,
+        'fulltime_count': fulltime_count,
+        'parttime_count': parttime_count,
+        'major_counts': list(major_counts),
+        'minor_counts': list(minor_counts),
+        'grad_department_counts': list(grad_department_counts),
+    }
+    return render(request, 'statistics/enrollment.html', context)
 #endregion
 
 

@@ -51,7 +51,9 @@ urlpatterns = [
     path('events/', views.events_view, name='events_view'),
 
     path('admin/users/', views.admin_users_view, name='admin_users_view'),
+
     path('admin/courses/', views.admin_course_view, name='admin_course_view'),
+
     path('admin/add_course/', views.add_course, name='admin_add_course'),
     path('admin/update_course/<int:course_id>', views.edit_course, name='admin_update_course'),
     path('admin/delete_course/<int:course_id>', views.delete_course, name='admin_delete_course'),
@@ -60,6 +62,7 @@ urlpatterns = [
     path('admin/add_section/<int:course_id>', views.add_section, name='admin_add_section'),
     path('admin/update_section/<int:crn>', views.edit_section, name='admin_update_section'),
     path('admin/delete_section/<int:crn>', views.delete_section, name='admin_delete_section'),
+
     path('admin/students/', views.list_students_view, name='admin_students_view'),
     path('admin/get_student_data/', views.get_student_data, name='admin_get_student_data'),
     path('admin/update_student/<int:student_id>', views.update_student_view, name='admin_update_student'),
@@ -94,5 +97,9 @@ urlpatterns = [
 
     path('profile/', views.profile_view, name='profile_view'),
     path('update_profile/', views.update_profile, name='update_profile'),
+
+
+    path('statisticsoffice/', views.statistics_view, name='statistics_view'),
+    path('statisticsoffice/enrollment/', views.college_statistics_view, name='college_statistics_view'),
 
 ]

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>College Statistics</h1>
+    <!-- Pie Chart for Undergraduate vs Graduate -->
+    <div class="card">
+        <div class="row">
+            <!-- Undergraduate vs Graduate Pie Chart -->
+            <div class="col-md-6">
+                <h2>Undergraduate vs Graduate Students</h2>
+                <div style="max-width: 400px; margin: auto;">
+                    <canvas id="ugGradChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Full-time vs Part-time Pie Chart -->
+            <div class="col-md-6">
+                <h2>Full-time vs Part-time Students</h2>
+                <div style="max-width: 400px; margin: auto;">
+                    <canvas id="fullPartChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas for Major Enrollment Bar Chart -->
+        <div class="chart-container">
+            <h2 class="text-center">Major Enrollment</h2>
+            <canvas id="majorChart"></canvas>
+        </div>
+
+        <!-- Canvas for Minor Enrollment Bar Chart -->
+        <div class="chart-container">
+            <h2 class="text-center">Minor Enrollment</h2>
+            <canvas id="minorChart"></canvas>
+        </div>
+
+        <!-- Canvas for Graduate Students by Department Bar Chart -->
+        <div class="chart-container">
+            <h2 class="text-center">Graduate Students by Department</h2>
+            <canvas id="gradDeptChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var ctxUgGrad = document.getElementById('ugGradChart').getContext('2d');
+    var ctxFullPart = document.getElementById('fullPartChart').getContext('2d');
+    var ctxMajors = document.getElementById('majorChart').getContext('2d');
+    var ctxMinors = document.getElementById('minorChart').getContext('2d');
+    var ctxGradDept = document.getElementById('gradDeptChart').getContext('2d');
+
+    // Prepare data
+    var dataUgGrad = {
+        labels: ['Undergraduate', 'Graduate'],
+        datasets: [{
+            label: 'Student Type',
+            data: [{{ undergrad_count }}, {{ grad_count }}],
+            backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)']
+        }]
+    };
+
+    var dataFullPart = {
+        labels: ['Full-time', 'Part-time'],
+        datasets: [{
+            label: 'Enrollment Type',
+            data: [{{ fulltime_count }}, {{ parttime_count }}],
+            backgroundColor: ['rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)']
+        }]
+    };
+
+    var majorCounts = {{ major_counts|safe }};
+    var minorCounts = {{ minor_counts|safe }};
+    var gradDeptCounts = {{ grad_department_counts|safe }};
+
+    // Function to map data for bar charts
+    function mapChartData(data, labelKey, valueKey) {
+        return {
+            labels: data.map(item => item[labelKey]),
+            datasets: [{
+                label: 'Number of Students',
+                data: data.map(item => item[valueKey]),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+    }
+
+    // Chart for Majors
+    var ctxMajors = document.getElementById('majorChart').getContext('2d');
+    var majorChartData = mapChartData(majorCounts, 'major_name', 'student_count');
+    var majorChart = new Chart(ctxMajors, {
+        type: 'bar',
+        data: majorChartData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Chart for Minors
+    var ctxMinors = document.getElementById('minorChart').getContext('2d');
+    var minorChartData = mapChartData(minorCounts, 'minor_name', 'student_count');
+    var minorChart = new Chart(ctxMinors, {
+        type: 'bar',
+        data: minorChartData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Chart for Graduates by Department
+    var ctxGrads = document.getElementById('gradDeptChart').getContext('2d');
+    var gradDeptChartData = mapChartData(gradDeptCounts, 'department_name', 'grad_count');
+    var gradDeptChart = new Chart(ctxGrads, {
+        type: 'bar',
+        data: gradDeptChartData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+
+    // Create charts
+    new Chart(ctxUgGrad, { type: 'pie', data: dataUgGrad });
+    new Chart(ctxFullPart, { type: 'pie', data: dataFullPart });
+});
+</script>
+{% endblock %}

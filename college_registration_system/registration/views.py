@@ -1207,7 +1207,7 @@ def update_faculty_view(request, user_id):
     else:
         form = FacultyEditForm(instance=faculty)
     return render(request, 'admin/admin_facultys.html', {'form': form})
-
+@login_required(login_url='user_login')
 def admin_college_view(request):
     if not request.user.user.user_type == 'Admin':
         messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
@@ -1217,7 +1217,7 @@ def admin_college_view(request):
         'usertype': request.user.user.user_type,
     }
     return render(request, 'admin/admin_college.html', context)
-
+@login_required(login_url='user_login')
 def manage_buildings(request):
     if not request.user.user.user_type == 'Admin':
         messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
@@ -1230,7 +1230,7 @@ def manage_buildings(request):
     context['buildings'] = Building.objects.all()
     context['buildingForm'] = buildingForm
     return render(request, 'admin/college/building.html', context)
-
+@login_required(login_url='user_login')
 def add_building(request):
     if request.method == 'POST':
         form = BuildingForm(request.POST)
@@ -1241,7 +1241,7 @@ def add_building(request):
     else:
         form = BuildingForm()
     return render(request, 'admin/college/building.html', {'form': form})
-
+@login_required(login_url='user_login')
 def manage_rooms(request, building_id):
     if not request.user.user.user_type == 'Admin':
         messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
@@ -1255,7 +1255,7 @@ def manage_rooms(request, building_id):
     context['rooms'] = Room.objects.filter(building=context['building'])
     context['room_form'] = room_form
     return render(request, 'admin/college/room.html', context)
-
+@login_required(login_url='user_login')
 def add_room(request, building_id):
     if request.method == 'POST':
         form = RoomForm(request.POST)

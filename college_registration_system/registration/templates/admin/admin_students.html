@@ -59,7 +59,7 @@
 {% block script %}
 <script>
     $(document).ready(function () {
-        $('#studentsTable').DataTable();
+        $('#studentsTable').DataTable({responsive: true});
 
         function fetchStudentData(studentId) {
             $.ajax({
@@ -73,7 +73,7 @@
                     // Dynamically create form fields based on response
                     $('#editStudentForm').append('<input type="hidden" name="studentID" value="' + response.studentID + '">');
                     // Major, Minor, Enrollment Year, Student Type
-                    $('#editStudentForm').append(createSelectField('department_id', 'Department', response.department_id, response.departments));
+                    $('#editStudentForm').append(createSelectField('department', 'Department', response.department_id, response.departments));
                     $('#editStudentForm').append(createSelectField('major_id', 'Major', response.major_id, response.majors));
                     $('#editStudentForm').append(createSelectField('minor_id', 'Minor', response.minor_id, response.minors));
                     $('#editStudentForm').append('<div class="form-group"><label>Enrollment Year</label><input type="number" class="form-control" name="enrollment_year" value="' + response.enrollment_year + '"></div>');

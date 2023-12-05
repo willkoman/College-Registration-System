@@ -65,9 +65,15 @@ urlpatterns = [
     path('admin/update_student/<int:student_id>', views.update_student_view, name='admin_update_student'),
     path('admin/student/gradebook/<int:student_id>', views.get_student_grades, name='admin_student_gradebook_view'),
     path('admin/student/gradebook/update/', views.update_gradebook_student, name='update_gradebook_student'),
+
+    path('admin/facultys/', views.admin_faculty_view, name='admin_faculty_view'),
+    path('admin/get_faculty_data/<str:user_id>', views.get_faculty_data, name='admin_get_faculty_data'),
+    path('admin/update_faculty/<str:user_id>', views.update_faculty_view, name='admin_update_faculty'),
+
     path('get_user_form/', views.get_user_form, name='get_user_form'),
     path('update_user/', views.update_user, name='update_user'),
     path('add_user/', views.add_user, name='add_user'),
+    path('delete_user/<str:user_id>', views.delete_user, name='delete_user'),
 
     path('gradebook/<int:section_id>/', views.gradebook_view, name='gradebook_view'),
     path('roster/<int:section_id>/', views.roster_view, name='roster_view'),

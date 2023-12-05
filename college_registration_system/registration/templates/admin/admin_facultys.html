@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-3">
+    <h2>Faculty List</h2>
+    <table id="facultyTable" class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Rank</th>
+                <th>Department(s)</th>
+                <th>Specialty</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for faculty in faculty %}
+            <tr>
+                <td>{{ faculty.user.first_name }} {{ faculty.user.last_name }}</td>
+                <td>{{ faculty.rank }}</td>
+                <td>
+                    {% for department in faculty.departments.all %}
+                        {{ department }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+                <td>{{ faculty.specialty }}</td>
+                <td>{{ faculty.fac_type }}</td>
+                <td>
+                    <button class="btn btn-primary edit-btn" data-toggle="modal" data-target="#editFacultyModal" data-facultyid="{{ faculty.user.id }}">Edit</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit Faculty Modal -->
+<div class="modal fade" id="editFacultyModal" tabindex="-1" role="dialog" aria-labelledby="editFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editFacultyModalLabel">Edit Faculty</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editFacultyForm">
+                    <!-- Fields will be populated here by JavaScript -->
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" form="editFacultyForm" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function () {
+        $('#facultyTable').DataTable({responsive: true});
+
+        function limitCheckboxSelection() {
+            var checkedCount = $('input[name="departments"]:checked').length;
+            if (checkedCount >= 2) {
+                $('input[name="departments"]:not(:checked)').prop('disabled', true);
+            } else {
+                $('input[name="departments"]').prop('disabled', false);
+            }
+        }
+
+        function populateAndLimitCheckboxes(facultyDepartments, allDepartments) {
+            $('#editFacultyForm .form-group:last-child').empty(); // Clear existing checkboxes
+            allDepartments.forEach(function(dept) {
+                // Check if this department is one of the faculty's current departments
+                var isChecked = facultyDepartments.some(function(facDept) {
+                    return facDept.department_id === dept.department_id;
+                });
+
+                var checkboxHtml =
+                    '<div class="form-check">' +
+                    '<input class="form-check-input" type="checkbox" name="departments" value="' + dept.department_id + '" id="dept' + dept.department_id + '"' + (isChecked ? ' checked' : '') + '>' +
+                    '<label class="form-check-label" for="dept' + dept.department_id + '">' + dept.department_name + '</label>' +
+                    '</div>';
+                $('#editFacultyForm .form-group:last-child').append(checkboxHtml);
+            });
+
+            limitCheckboxSelection(); // Initial call to limit checkboxes
+
+            $('input[name="departments"]').on('change', function() {
+                limitCheckboxSelection(); // Limit checkboxes on change
+            });
+        }
+
+        function fetchFacultyData(facultyId) {
+            $.ajax({
+                url: '/admin/get_faculty_data/' + facultyId,
+                type: 'GET',
+                success: function(response) {
+                    $('#editFacultyForm').empty();
+
+                    // Populate basic information fields
+                    $('#editFacultyForm').append('<input type="hidden" name="id" value="' + facultyId + '">');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="first_name">First Name</label><input type="text" class="form-control" name="first_name" value="' + response.first_name + '"></div>');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="last_name">Last Name</label><input type="text" class="form-control" name="last_name" value="' + response.last_name + '"></div>');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="email">Email</label><input type="email" class="form-control" name="email" value="' + response.email + '"></div>');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="rank">Rank</label><input type="text" class="form-control" name="rank" value="' + response.rank + '"></div>');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="specialty">Specialty</label><input type="text" class="form-control" name="specialty" value="' + response.specialty + '"></div>');
+                    $('#editFacultyForm').append('<div class="form-group"><label for="fac_type">Type</label><input type="text" class="form-control" name="fac_type" value="' + response.fac_type + '"></div>');
+                    // Office Selector
+                    var officeSelectHtml = '<div class="form-group"><label for="office">Office</label><select class="form-control" name="office" id="office">';
+                        response.rooms.forEach(function(room) {
+                            var isSelected = room.id === response.office ? ' selected' : '';
+                            officeSelectHtml += '<option value="' + room.id + '"' + isSelected + '>' + room.building__bldg_name + ' - Room ' + room.room_no + '</option>';
+                        });
+                        officeSelectHtml += '</select></div>';
+                        $('#editFacultyForm').append(officeSelectHtml);
+
+                    //invisible num_of_courses field
+                    $('#editFacultyForm').append('<div class="form-group"><input type="hidden" class="form-control" name="num_of_courses" value="' + response.num_of_courses + '"></div>');
+
+                    // Department Checkboxes
+                    $('#editFacultyForm').append('<div class="form-group"><label>Departments</label></div>');
+
+                    // Call function to populate and limit checkboxes
+                    populateAndLimitCheckboxes(response.department, response.departments);
+
+                    $('#editFacultyModal').modal('show');
+                },
+                error: function(error) {
+                    console.log(error);
+                    alert('Error fetching faculty data');
+                }
+            });
+        }
+
+        $('.edit-btn').on('click', function() {
+            var facultyId = $(this).data('facultyid');
+            fetchFacultyData(facultyId);
+        });
+
+        $('#editFacultyForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            var facultyId = $('#editFacultyForm input[name=id]').val();
+            $.ajax({
+                url: '/admin/update_faculty/' + facultyId,
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#editFacultyModal').modal('hide');
+                        location.reload();
+                    } else {
+                        console.log(response.errors);
+                        alert('Error updating faculty');
+                    }
+                },
+                error: function(error) {
+                    console.log(error);
+                    alert('Error updating faculty');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

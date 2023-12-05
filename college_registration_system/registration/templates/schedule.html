@@ -37,8 +37,8 @@
     <div class="mb-3">
         <label for="semesterSelect" class="form-label">Select Semester:</label>
         <select class="form-select" id="semesterSelect">
-            <option value="Fall 2023" selected>Fall 2023</option>
-            <option value="Spring 2024">Spring 2024</option>
+            <option value="Fall 2023" >Fall 2023</option>
+            <option value="Spring 2024" selected>Spring 2024</option>
         </select>
     </div>
     <table id="scheduleTable"  >
@@ -85,7 +85,7 @@
             $('#scheduleTable').DataTable(
                 {responsive: true}
             );
-            $('#scheduleTable').DataTable().column(7).search("Fall 2023").draw();
+            $('#scheduleTable').DataTable().column(7).search("Spring 2024").draw();
         } );
 
         $('#semesterSelect').on('change', function () {

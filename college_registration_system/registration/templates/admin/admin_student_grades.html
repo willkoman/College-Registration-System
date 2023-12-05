@@ -1,7 +1,7 @@
 {% extends 'base.html'%}
 {% block content %}
-<button class="btn btn-primary text-light" onclick="window.location.href='/admin/'">Back</button>
-<h1>Gradebook for {{ section }}</h1>
+<button class="btn btn-primary text-light" onclick="window.location.href='/admin/students'">Back</button>
+<h1>Gradebook for {{ student.user.first_name }} {{ student.user.last_name }}</h1>
 
 <form id="gradebookForm" method="post">
     {% csrf_token %}

@@ -4,10 +4,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.serializers import serialize
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from .forms import CourseForm, CourseSectionForm, StudentEditForm, UserCompositeForm
+from .forms import CourseForm, CourseSectionForm, FacultyEditForm, StudentEditForm, UserCompositeForm
 from .models import (
     CoursePrereq,Attendance, Room, Semester,Hold, CourseSection,Department, Course,Login,
     Enrollment,Day,StudentHistory, Timeslot, User, Admin, Student, Faculty,Faculty_FullTime,
@@ -377,7 +378,7 @@ def profile_view(request):
 @login_required(login_url='user_login')
 def update_profile(request):
     if request.method == 'POST':
-        user = request.user
+        user = request.user.user
         user.street = request.POST.get('street')
         user.city = request.POST.get('city')
         user.state = request.POST.get('state')
@@ -390,10 +391,10 @@ def update_profile(request):
         confirm_password = request.POST.get('confirm_password')
 
         if old_password and new_password and confirm_password:
-            userlogin = Login.objects.get(user=user)
+            userlogin = request.user
             if check_password(old_password, userlogin.password):
                 if new_password == confirm_password:
-                    userlogin.password = make_password(new_password)
+                    userlogin.set_password(new_password)
                     userlogin.save()
                     update_session_auth_hash(request, userlogin)
                     messages.success(request, 'Your password was successfully updated!')
@@ -406,7 +407,6 @@ def update_profile(request):
         return redirect('profile_view')
     else:
         return render(request, 'profile.html')
-
 #endregion
 #region student
 #### STUDENT VIEWS ####
@@ -796,6 +796,17 @@ def add_user(request):
             return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
     else:
         return JsonResponse({'status': 'method not allowed'}, status=405)
+
+@login_required(login_url='user_login')
+def delete_user(request, user_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
+        return redirect('/homepage/')
+    user = User.objects.get(id=user_id)
+    user.delete()
+    messages.success(request, 'User deleted successfully.')
+    return JsonResponse({'status': 'success', 'message': 'User deleted successfully.'})
+
 @login_required(login_url='user_login')
 def admin_course_view(request):
     if not request.user.user.user_type == 'Admin':
@@ -1004,10 +1015,12 @@ def get_student_data(request):
                 full_time = Undergrad_Full_Time.objects.filter(student=undergrad).first()
                 if full_time:
                     data['standing'] = full_time.standing
+                    data['creds_earned'] = full_time.creds_earned
             elif undergrad.undergrad_student_type == 'PartTime':
                 part_time = Undergrad_Part_Time.objects.filter(student=undergrad).first()
                 if part_time:
                     data['standing'] = part_time.standing
+                    data['creds_earned'] = part_time.creds_earned
     elif student.student_type == 'Graduate':
         grad = Graduate.objects.filter(student=student).first()
         if grad:
@@ -1017,12 +1030,12 @@ def get_student_data(request):
                 full_time = Grad_Full_Time.objects.filter(student=grad).first()
                 if full_time:
                     data['year'] = full_time.year
-                    data['credits_earned'] = full_time.credits_earned
+                    data['creds_earned'] = full_time.credits_earned
             elif grad.grad_student_type == 'PartTime':
                 part_time = Grad_Part_Time.objects.filter(student=grad).first()
                 if part_time:
                     data['year'] = part_time.year
-                    data['credits_earned'] = part_time.credits_earned
+                    data['creds_earned'] = part_time.credits_earned
     print("Data:", data)
     return JsonResponse(data)
 
@@ -1122,6 +1135,75 @@ def update_gradebook_student(request):
         return JsonResponse({'status': 'success'})
     else:
         return JsonResponse({'status': 'error', 'error_message': 'Invalid request'}, status=400)
+
+@login_required(login_url='user_login')
+def admin_faculty_view(request):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, f'You are not authorized to view this page.',extra_tags='Error')
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    context['faculty'] = Faculty.objects.all()
+    context['departments'] = Department.objects.all()
+    return render(request, 'admin/admin_facultys.html', context)
+
+@login_required(login_url='user_login')
+def get_faculty_data(request, user_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+    faculty = get_object_or_404(Faculty, user_id=user_id)
+    data = {
+        'id': faculty.user.id,
+        'first_name': faculty.user.first_name,
+        'last_name': faculty.user.last_name,
+        'email': Login.objects.get(user=faculty.user).email,
+        'rank': faculty.rank,
+        'specialty': faculty.specialty,
+        'fac_type': faculty.fac_type,
+        'department': list(faculty.departments.all().values('department_id')),
+        # Additional fields for FullTime/PartTime
+        'num_of_courses': faculty.faculty_fulltime.num_of_courses if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.num_of_courses,
+        'office': faculty.faculty_fulltime.office.id if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.office.id,
+    }
+    departments = Department.objects.all()
+    departments = list(departments.values('department_id', 'department_name'))
+    data['departments'] = departments
+    rooms = Room.objects.all()
+    rooms = list(rooms.values('id', 'building__bldg_name', 'room_no'))
+    data['rooms'] = rooms
+
+    return JsonResponse(data)
+
+@login_required(login_url='user_login')
+def update_faculty_view(request, user_id):
+    faculty = get_object_or_404(Faculty, user_id=user_id)
+    if request.method == 'POST':
+        form = FacultyEditForm(request.POST, instance=faculty)
+        if form.is_valid():
+            updated_faculty = form.save()
+            if updated_faculty.fac_type == 'FullTime':
+                Faculty_PartTime.objects.filter(faculty=updated_faculty).delete()
+                Faculty_FullTime.objects.update_or_create(
+                    faculty=updated_faculty,
+                    defaults={'num_of_courses': form.cleaned_data['num_of_courses'],
+                              'office': form.cleaned_data['office']}
+                )
+            elif updated_faculty.fac_type == 'PartTime':
+                Faculty_FullTime.objects.filter(faculty=updated_faculty).delete()
+                Faculty_PartTime.objects.update_or_create(
+                    faculty=updated_faculty,
+                    defaults={'num_of_courses': form.cleaned_data['num_of_courses'],
+                              'office': form.cleaned_data['office']}
+                )
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors})
+    else:
+        form = FacultyEditForm(instance=faculty)
+    return render(request, 'admin/admin_facultys.html', {'form': form})
+
 #endregion
 
 

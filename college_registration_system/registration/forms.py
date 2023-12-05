@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Major, Minor, User, Login, Student, Faculty, Admin, Department, CourseSection, Undergraduate,Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,Undergrad_Part_Time
+from .models import Course, Major, Minor, Room, User, Login, Student, Faculty, Admin, Department, CourseSection, Undergraduate,Graduate,Grad_Full_Time,Grad_Part_Time,Undergrad_Full_Time,Undergrad_Part_Time
 from django.contrib.admin.forms import AdminAuthenticationForm
 
 class LoginForm(forms.ModelForm):
@@ -191,3 +191,23 @@ class StudentEditForm(forms.ModelForm):
                 grad, created = Graduate.objects.get_or_create(student=student)
                 grad.department = self.cleaned_data['department']
                 grad.save()
+
+class FacultyEditForm(forms.ModelForm):
+    rank = forms.ChoiceField(choices=Faculty.RANK_CHOICES)
+    departments = forms.ModelMultipleChoiceField(queryset=Department.objects.all())
+    specialty = forms.CharField()
+    fac_type = forms.ChoiceField(choices=Faculty.FAC_TYPE_CHOICES)
+    num_of_courses = forms.IntegerField()  # Common to both FullTime and PartTime
+    office = forms.ModelChoiceField(queryset=Room.objects.all())  # Common to both FullTime and PartTime
+
+    class Meta:
+        model = Faculty
+        fields = ['rank', 'departments', 'specialty', 'fac_type', 'num_of_courses', 'office']
+        widgets = {
+            'rank': forms.Select(attrs={'class': 'form-control'}),
+            'departments': forms.SelectMultiple(attrs={'class': 'form-control'}),
+            'specialty': forms.TextInput(attrs={'class': 'form-control'}),
+            'fac_type': forms.Select(attrs={'class': 'form-control'}),
+            'num_of_courses': forms.NumberInput(attrs={'class': 'form-control'}),
+            'office': forms.Select(attrs={'class': 'form-control'}),
+        }

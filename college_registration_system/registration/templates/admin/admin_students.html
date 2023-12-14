@@ -120,7 +120,7 @@
             return fieldHtml;
         }
         // Event listener for edit button click
-        $('.edit-btn').on('click', function() {
+        $('#studentsTable').on('click', '.edit-btn', function() {
             var studentId = $(this).data('studentid');
             fetchStudentData(studentId);
         });

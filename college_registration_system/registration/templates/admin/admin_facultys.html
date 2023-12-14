@@ -15,6 +15,7 @@
                 <th>Department(s)</th>
                 <th>Specialty</th>
                 <th>Type</th>
+                <th>Time Commitment</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -30,8 +31,9 @@
                 </td>
                 <td>{{ faculty.specialty }}</td>
                 <td>{{ faculty.fac_type }}</td>
+                <td>{{ faculty.time_commitment }}</td>
                 <td>
-                    <button class="btn btn-primary edit-btn" data-toggle="modal" data-target="#editFacultyModal" data-facultyid="{{ faculty.user.id }}">Edit</button>
+                    <button class="btn btn-primary edit-btn" data-toggle="modal" data-facultyid="{{ faculty.user.id }}">Edit</button>
                 </td>
             </tr>
             {% endfor %}
@@ -102,6 +104,7 @@
         }
 
         function fetchFacultyData(facultyId) {
+            console.log('Fetching faculty data for faculty ID ' + facultyId);
             $.ajax({
                 url: '/admin/get_faculty_data/' + facultyId,
                 type: 'GET',
@@ -155,7 +158,7 @@
             });
         }
 
-        $('.edit-btn').on('click', function() {
+        $('#facultyTable').on('click', '.edit-btn', function() {
             var facultyId = $(this).data('facultyid');
             fetchFacultyData(facultyId);
         });

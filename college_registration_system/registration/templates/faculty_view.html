@@ -3,6 +3,15 @@
 {% block content %}
 
 <div class="container mt-5">
+    <div class="search-student">
+        <form id="searchStudentForm">
+            <div class="form-group">
+                <label for="searchStudentID">Search Student by ID:</label>
+                <input type="text" class="form-control" id="searchStudentID" name="studentID" placeholder="Enter Student ID">
+                <button type="submit" class="btn btn-primary mt-2">Search</button>
+            </div>
+        </form>
+    </div>
     <h2 class="text-center">Welcome, {{username}}</h2>
     <h3 class="text-center">You are a {{faculty.fac_type|lower}} faculty member in the {% for dept in faculty.departments.all %}<i>{{ dept.department_name }}</i>{% if not forloop.last %}, {% endif %}{% endfor %} Department(s)</h3>
     <h3 class="text-center">You are currently teaching the following courses:</h3>
@@ -137,6 +146,39 @@
             // Show modal
             $('#historyModal').modal('show');
         });
+        $('#searchStudentForm').on('submit', function(e) {
+            e.preventDefault();
+            var studentID = $('#searchStudentID').val();
+
+            $.ajax({
+                url: '/fac/search_student/',  // Update with the correct URL
+                type: 'POST',
+                data: { 'studentID': studentID },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        populateHistoryModal(response.history, response.student);
+                        $('#historyModal').modal('show');
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error occurred while fetching student data');
+                }
+            });
+
+        });
+        function populateHistoryModal(historyData, stud) {
+            var historyTableBody = $('#historyTable tbody');
+            historyTableBody.empty();
+            //change historyModalLabel text to Student History for: stud.first_name + " " + stud.last_name + " (" + stud.studentID + ")";
+            $('#historyModalLabel').text('Student History for: ' + stud.first_name + " " + stud.last_name + " (" + stud.studentID + ")");
+
+
+            historyData.forEach(function(item) {
+                historyTableBody.append('<tr><td>' + item.course + '</td><td>' + item.grade + '</td><td>' + item.semester + '</td></tr>');
+            });
+        }
     });
 </script>
 {% endblock %}

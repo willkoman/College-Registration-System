@@ -49,7 +49,7 @@ urlpatterns = [
     path('faculty/', views.faculty_view, name='faculty_view'),
     path('calendar/', views.calendar_view, name='calendar_view'),
     path('events/', views.events_view, name='events_view'),
-
+    path('fac/search_student/', views.search_student_view, name='search_student'),
     path('admin/users/', views.admin_users_view, name='admin_users_view'),
 
     path('admin/courses/', views.admin_course_view, name='admin_course_view'),

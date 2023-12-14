@@ -12,7 +12,20 @@
             <label for="datePicker">Select Date:</label>
             <input id="datePicker" type="date" name="date_of_class" value="" max="{{ today }}">
         </div>
-
+        <div class="form-group">
+            <label for="attendanceDateSelect">Previous Attendances:</label>
+            <select class="form-control" id="attendanceDateSelect" {% if has_previous_dates %} {%else%}disabled {% endif %}>
+                <option value="">Select a Date</option>
+                {% for date in previous_dates %}
+                    <option value="{{ date|date:"Y-m-d" }}">{{ date|date:"Y-m-d" }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if disabled == True %}
+            <p class="text-danger">It is outside the current valid time period for this attendance. This form has been disabled.</p>
+            <p class="text-danger">Valid time period: {{ start_date}} to {{ end_date}}</p>
+            <p class="text-danger">Current time: {{ current_date }}</p>
+        {% endif %}
         <table class="table table-bordered" id="attendanceTable">
             <thead>
                 <tr>
@@ -25,7 +38,13 @@
                 <tr>
                     <td>{{ enrollment.student.user.first_name }} {{ enrollment.student.user.last_name }}</td>
                     <td>
-                        <input type="checkbox" name="present_{{ enrollment.student.studentID }}" value="true" {% if attendances|get_item:enrollment.student.studentID %} checked {% endif %}>
+
+                        {% comment %} if disabled = True, checkbox is disabled, otherwise it is enabled {% endcomment %}
+                        {% if disabled == False%}
+                            <input type="checkbox" name="present_{{ enrollment.student.studentID }}" value="true" {% if attendances|get_item:enrollment.student.studentID %} checked {% endif %}>
+                        {% else %}
+                            <input type="checkbox" name="present_{{ enrollment.student.studentID }}" value="true" {% if attendances|get_item:enrollment.student.studentID %} checked {% endif %} disabled>
+                        {% endif %}
                         <input type="hidden" name="attendances[]" value="{{ enrollment.student.studentID }}">
                     </td>
                 </tr>
@@ -34,7 +53,7 @@
 
             </tbody>
         </table>
-        <button type="submit" class="btn btn-primary">Save Attendance</button>
+        <button type="submit" class="btn btn-primary" {% if disabled == True %} disabled {% endif %}>Save Attendance</button>
     </form>
 </div>
 {% endblock %}
@@ -88,6 +107,13 @@
                 }
             });
         });
+    });
+    $('#attendanceDateSelect').change(function() {
+        var selectedDate = $(this).val();
+        if (selectedDate) {
+            var sectionID = $('#sectionID').text();
+            window.location.href = "/attendance/" + sectionID + "?date=" + selectedDate;
+        }
     });
 </script>
 {% endblock %}

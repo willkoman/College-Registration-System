@@ -14,6 +14,8 @@
                 <th>Name</th>
                 <th>Major</th>
                 <th>Minor</th>
+                <th>Time Status</th>
+                <th>Grad Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -24,6 +26,8 @@
                 <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
                 <td>{{ student.major_id }}</td>
                 <td>{{ student.minor_id }}</td>
+                <td>{{ student.time_status }}</td>
+                <td>{{ student.student_type }}</td>
                 <td>
                     <button class="btn btn-primary edit-btn" data-toggle="modal" data-target="#editStudentModal" data-studentid="{{ student.studentID }}">Edit</button>
                     <button class="btn btn-secondary edit-grades-btn" onclick="window.location.href='/admin/student/gradebook/{{ student.studentID }}'">Edit Grades</button>

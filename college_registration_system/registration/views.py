@@ -1,4 +1,5 @@
 import datetime
+import random
 from django.forms import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -968,12 +969,29 @@ def list_students_view(request):
     if not request.user.user.user_type == 'Admin':
         messages.error(request, "You are not authorized to view this page.")
         return redirect('/homepage/')
+
+    students = Student.objects.all()[:100]
+
+    for student in students:
+        if student.student_type == 'Undergraduate':
+            undergrad_record = Undergraduate.objects.filter(student=student).first()
+            if undergrad_record:
+                student.time_status = undergrad_record.undergrad_student_type
+            else:
+                student.time_status = 'Unknown'
+        elif student.student_type == 'Graduate':
+            grad_record = Graduate.objects.filter(student=student).first()
+            if grad_record:
+                student.time_status = grad_record.grad_student_type
+            else:
+                student.time_status = 'Unknown'
+
     context = {
-        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'username': request.user.user.first_name + ' ' + request.user.user.last_name,
         'usertype': request.user.user.user_type,
+        'students': students,
     }
-    #only get top 100
-    context['students']= Student.objects.all()[:100]
+
     return render(request, 'admin/admin_students.html', context)
 @login_required(login_url='user_login')
 def get_student_data(request):
@@ -1146,7 +1164,21 @@ def admin_faculty_view(request):
         'username': request.user.user.first_name+' '+request.user.user.last_name,
         'usertype': request.user.user.user_type,
     }
-    context['faculty'] = Faculty.objects.all()
+    faculty = Faculty.objects.all()
+    for fac in faculty:
+        if fac.time_commitment is None or fac.time_commitment == '' or fac.time_commitment == '100%':
+            if fac.departments.count() == 1:
+                fac.time_commitment = '100%'
+            elif fac.departments.count() == 2:
+                r = random.randint(0,2)
+                if r == 0:
+                    fac.time_commitment = '50%/50%'
+                elif r == 1:
+                    fac.time_commitment = '60%/40%'
+                elif r == 2:
+                    fac.time_commitment = '30%/70%'
+            fac.save()
+    context['faculty'] = faculty
     context['departments'] = Department.objects.all()
     return render(request, 'admin/admin_facultys.html', context)
 
@@ -1170,14 +1202,24 @@ def get_faculty_data(request, user_id):
         'department': list(faculty.departments.all().values('department_id')),
         # Additional fields for FullTime/PartTime
         'num_of_courses': faculty.faculty_fulltime.num_of_courses if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.num_of_courses,
-        'office': faculty.faculty_fulltime.office.id if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.office.id,
+
     }
+
     departments = Department.objects.all()
     departments = list(departments.values('department_id', 'department_name'))
     data['departments'] = departments
+    try:
+        data['office'] = faculty.faculty_fulltime.office.id if faculty.fac_type == 'FullTime' else faculty.faculty_parttime.office.id
+    except:
+        data['office'] = None
     rooms = Room.objects.all()
+
     rooms = list(rooms.values('id', 'building__bldg_name', 'room_no'))
     data['rooms'] = rooms
+    # print("Data:", data)
+    #if failed to get any data, return error
+    if not data:
+        return JsonResponse({'status': 'error', 'message': 'Failed to get faculty data.'}, status=400)
 
     return JsonResponse(data)
 
@@ -1346,6 +1388,26 @@ def faculty_view(request):
             context['students'].append({'student': student, 'email': Login.objects.get(user=student.user).email,'course_history': student_course_history})
 
     return render(request, 'faculty_view.html', context)
+
+@login_required(login_url='user_login')
+def search_student_view(request):
+    if request.method == 'POST':
+        student_id = request.POST.get('studentID')
+        try:
+            student = Student.objects.get(studentID=student_id)
+            student_history = StudentHistory.objects.filter(student=student)
+            history_data = []
+            for history in student_history:
+                course = CourseSection.objects.get(crn=history.section.crn).course.course_name
+                history_data.append({'course': course, 'grade': history.grade, 'semester': history.semester.semester_name})
+
+            return JsonResponse({'status': 'success', 'history': history_data, 'student': {'first_name': student.user.first_name, 'last_name': student.user.last_name, 'studentID': student.studentID}})
+        except Student.DoesNotExist:
+            print("Student not found")
+            return JsonResponse({'status': 'error', 'message': 'Student not found'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
 @login_required(login_url='user_login')
 def gradebook_view(request, section_id):
     if not request.user.user.user_type == 'Faculty':
@@ -1414,6 +1476,12 @@ def attendance_view(request, section_id):
     date = parse_date(date_str) if date_str else None
     enrollments = Enrollment.objects.filter(section=section)
     attendances = {}
+    previous_attendances = Attendance.objects.filter(section=section)
+    #get dates of previous attendances
+    dates = []
+    for attendance in previous_attendances:
+        if attendance.date_of_class not in dates:
+            dates.append(attendance.date_of_class)
     print("Selected Date:", date)
     if date:
         for attendance in Attendance.objects.filter(section=section, date_of_class=date):
@@ -1428,9 +1496,30 @@ def attendance_view(request, section_id):
         'date': date,
         'attendances': attendances,
         'enrollments': enrollments,
-        'selected_date': request.POST.get('date_of_class', datetime.date.today().strftime("%Y-%m-%d"))  # Default to today's date
+        'selected_date': request.POST.get('date_of_class', datetime.date.today().strftime("%Y-%m-%d")),  # Default to today's date
+        'previous_dates': dates,
+        'has_previous_dates': len(dates) > 0,
     }
-
+    #set current datetime timezone to -5 hours to match timezone
+    current_time = datetime.datetime.now() - datetime.timedelta(hours=5)
+    current_time = datetime.time(current_time.hour, current_time.minute, current_time.second)
+    #if current time is outside of class time up to an hour later, pass disabled = true to template
+    print("Current Time:", current_time)
+    #start_time and end_time come from timeslot.periods, a many to many field
+    start_time = section.timeslot.periods.all()[0].start_time
+    start_time = datetime.time(start_time.hour, start_time.minute, start_time.second)
+    print("Start Time:", start_time)
+    end_time = section.timeslot.periods.all()[0].end_time
+    end_time = datetime.time(end_time.hour, end_time.minute, end_time.second)
+    print("End Time:", end_time)
+    #start and end are datetime.time objects so we need to add an hour to end_time to compare
+    if current_time < start_time or current_time > (end_time):
+        context['disabled'] = True
+    else:
+        context['disabled'] = False
+    context['start_date'] = start_time
+    context['end_date'] = end_time
+    context['current_date'] = current_time
     return render(request, 'faculty/attendance.html', context)
 @login_required(login_url='user_login')
 def update_attendance(request, section_id):

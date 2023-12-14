@@ -59,7 +59,7 @@ class UserCompositeForm(forms.ModelForm):
                 self.fields['student_type'].initial = user.student.student_type
             if hasattr(user, 'faculty'):
                 self.fields['rank'].initial = user.faculty.rank
-                self.fields['departments'].initial = user.faculty.departments
+                self.fields['departments'].initial = user.faculty.departments.all()
                 self.fields['specialty'].initial = user.faculty.specialty
                 self.fields['fac_type'].initial = user.faculty.fac_type
             if hasattr(user, 'admin'):

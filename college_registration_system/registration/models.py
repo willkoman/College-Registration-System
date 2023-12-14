@@ -340,6 +340,7 @@ class Faculty(models.Model):
     #can be multiple departments. Should be a foreign key list
     departments = models.ManyToManyField('Department')
     specialty = models.CharField(max_length=50, null=True, blank=True)
+    time_commitment = models.CharField(max_length=50, null=True, blank=True, default='100%')
     FAC_TYPE_CHOICES = [
         ('FullTime', 'Full-Time'),
         ('PartTime', 'Part-Time'),

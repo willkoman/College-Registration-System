@@ -830,11 +830,13 @@ def update_user(request):
                     ug, created = Undergraduate.objects.get_or_create(student=student)
                     if ug.undergrad_student_type is None:
                         ug.undergrad_student_type = 'Parttime'
+                        ug.department = student.major_id.department
                         ug.save()
                 elif student.student_type == 'Graduate':
                     grad, created = Graduate.objects.get_or_create(student=student)
                     if grad.grad_student_type is None:
                         grad.grad_student_type = 'Parttime'
+                        grad.department = student.major_id.department
                         grad.save()
             elif user_type == 'Faculty':
                 faculty, created = Faculty.objects.get_or_create(user=user_instance)
@@ -879,10 +881,12 @@ def add_user(request):
                 if student.student_type == 'Undergraduate':
                     ug, created = Undergraduate.objects.get_or_create(student=student)
                     ug.undergrad_student_type = 'Parttime'
+                    ug.department = student.major_id.department
                     ug.save()
                 elif student.student_type == 'Graduate':
                     grad, created = Graduate.objects.get_or_create(student=student)
                     grad.grad_student_type = 'Parttime'
+                    ug.department = student.major_id.department
                     grad.save()
             elif user_type == 'Faculty':
                 faculty, created = Faculty.objects.get_or_create(user=user_instance)

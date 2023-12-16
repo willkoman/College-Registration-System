@@ -376,6 +376,19 @@ def profile_view(request):
     }
     context['user'] = user
     context['login'] = Login.objects.get(user=user)
+    if usertype == 'Student':
+        context['majors'] = Major.objects.all()
+        context['minors'] = Minor.objects.all()
+        # Get student with that user and append to context
+        student = Student.objects.get(user=user)
+        context['student'] = student
+
+        try:
+            context['grad'] = Graduate.objects.get(student=student)
+        except Graduate.DoesNotExist:
+            context['undergrad'] = Undergraduate.objects.get(student=student)
+        print("Student:", student)
+
     return render(request, 'profile.html', context)
 
 @login_required(login_url='user_login')
@@ -387,7 +400,28 @@ def update_profile(request):
         user.state = request.POST.get('state')
         user.zip_code = request.POST.get('zip_code')
         user.save()
+        if user.user_type == 'Student':
+            student = Student.objects.get(user=user)
+            if request.POST.get('major') != 'None' or request.POST.get('major') != "":
+                if request.POST.get('major') == '-1':
+                    student.major_id = Major.objects.get(major_name='Undecided')
+                else:
+                    student.major_id = Major.objects.get(id=request.POST.get('major'))
+                    try:
+                        ug = Undergraduate.objects.get(student=student)
+                        ug.department = student.major_id.department
+                        ug.save()
+                    except:
+                        grad = Graduate.objects.get(student=student)
+                        grad.department = student.major_id.department
+                        grad.save()
+            if request.POST.get('minor') != 'None' or request.POST.get('minor') != "":
+                if request.POST.get('minor') == '-1':
+                    student.minor_id = None
+                else:
+                    student.minor_id = Minor.objects.get(id=request.POST.get('minor'))
 
+            student.save()
         # Handling password change
         old_password = request.POST.get('old_password')
         new_password = request.POST.get('new_password')
@@ -400,13 +434,15 @@ def update_profile(request):
                     userlogin.set_password(new_password)
                     userlogin.save()
                     update_session_auth_hash(request, userlogin)
-                    messages.success(request, 'Your password was successfully updated!')
+                    messages.success(request, 'Your password was successfully updated!',extra_tags='Success')
                 else:
-                    messages.error(request, 'New passwords do not match.')
+                    messages.error(request, 'New passwords do not match.',extra_tags='Error')
+                    return redirect('profile_view')
             else:
-                messages.error(request, 'Old password is incorrect.')
+                messages.error(request, 'Old password is incorrect.',extra_tags='Error')
+                return redirect('profile_view')
 
-        messages.success(request, 'Your profile was successfully updated!')
+        messages.success(request, 'Your profile was successfully updated!',extra_tags='Success')
         return redirect('profile_view')
     else:
         return render(request, 'profile.html')
@@ -552,6 +588,8 @@ def register(request, section_id):
         #if student has completed course already with grade C or higher, raise exception
         if Enrollment.objects.filter(student=student, section__course=section.course).exists():
             raise Exception("You are already registered for this course.")
+        if section.available_seats <= 0:
+            raise Exception("There are no available seats in this section.")
         if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
             if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
                 raise Exception("You have already completed this course.")
@@ -596,6 +634,8 @@ def register(request, section_id):
                 grad.grad_student_type = 'Fulltime'
                 grad.save()
         enrollment.save()
+        section.available_seats -= 1
+        section.save()
         # Add a success message
         messages.success(request, f'You have successfully registered for {section}!',extra_tags='Success')
     except Exception as e:
@@ -614,6 +654,8 @@ def drop_course(request,section_id):
         section = CourseSection.objects.get(crn=section_id)
         enrollment = Enrollment.objects.get(student=student, section=section)
         enrollment.delete()
+        section.available_seats += 1
+        section.save()
         # Add a success message
         messages.success(request, f'You have successfully dropped {section}!',extra_tags='Success')
 
@@ -1170,6 +1212,47 @@ def update_student_view(request, student_id):
         form = StudentEditForm(instance=student)
 
     return JsonResponse({'status': 'error', 'message': f'Method not allowed. {form.errors}'}, status=405)
+
+@login_required(login_url='user_login')
+def student_hold_view(request, student_id):
+    if not request.user.user.user_type == 'Admin':
+        messages.error(request, "You are not authorized to access this resource.")
+        return redirect('/homepage/')
+    context = {
+        'username': request.user.user.first_name+' '+request.user.user.last_name,
+        'usertype': request.user.user.user_type,
+    }
+    context['student'] = Student.objects.get(studentID=student_id)
+    context['student'].first_name = context['student'].user.first_name
+    context['student'].last_name = context['student'].user.last_name
+    context['holds'] = Hold.objects.filter(student=context['student'])
+    return render(request, 'admin/admin_student_holds.html', context)
+
+@login_required(login_url='user_login')
+def add_student_hold(request, student_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+
+    if request.method == 'POST':
+        #form will just pass hold_type
+        try:
+            Hold.objects.create(student=Student.objects.get(studentID=student_id), hold_type=request.POST.get('hold'))
+            messages.success(request, f'Hold added successfully.',extra_tags='Success')
+            return JsonResponse({'status': 'success', 'message': 'Hold added successfully', 'redirect_url': f'/admin/students/{student_id}/holds/'})
+        except Exception as e:
+            print(e)
+            messages.error(request, f'Error: Hold could not be added.', extra_tags='Error')
+            return JsonResponse({'status': 'error', 'errors': e}, status=400)
+
+@login_required(login_url='user_login')
+def delete_student_hold(request, student_id, hold_id):
+    if not request.user.user.user_type == 'Admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access'}, status=403)
+    hold = Hold.objects.get(id=hold_id)
+    hold.delete()
+    messages.success(request, f'Hold deleted successfully.', extra_tags='Success')
+
+    return HttpResponseRedirect(f'/admin/student/holds/{student_id}')
 
 @login_required(login_url='user_login')
 def get_student_grades(request,student_id):

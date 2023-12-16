@@ -647,15 +647,16 @@ class Command(BaseCommand):
 
             if dept.room_id is not None:
                 print(f"Room already assigned for {dept.department_name}")
-                continue
 
-            valid_rooms = Room.objects.all()
-            if len(valid_rooms) < 1:
-                print(f"Not enough rooms to assign for {dept.department_name}")
-                continue
+            else:
+                valid_rooms = Room.objects.all()
+                if len(valid_rooms) < 1:
+                    print(f"Not enough rooms to assign for {dept.department_name}")
+                    continue
 
-            dept.room_id = random.choice(valid_rooms)
-            print(f"Room of {dept.department_name} is {dept.room_id}")
+                dept.room_id = random.choice(valid_rooms)
+                print(f"Room of {dept.department_name} is {dept.room_id}")
+            dept.email = f"{dept.department_name.replace(' ', '_').lower()}@mikehawk.edu"
             dept.save()
     def check_enrollment_conflits(self, fake):
         #print how many students are fulltime and only enrolled in 2 courses

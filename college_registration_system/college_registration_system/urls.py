@@ -64,6 +64,9 @@ urlpatterns = [
     path('admin/delete_section/<int:crn>', views.delete_section, name='admin_delete_section'),
 
     path('admin/students/', views.list_students_view, name='admin_students_view'),
+    path('admin/student/holds/<int:student_id>', views.student_hold_view, name='admin_student_holds_view'),
+    path('admin/student/holds/<int:student_id>/add/', views.add_student_hold, name='admin_add_student_holds'),
+    path('admin/student/holds/<int:student_id>/delete/<int:hold_id>', views.delete_student_hold, name='admin_delete_student_holds'),
     path('admin/get_student_data/', views.get_student_data, name='admin_get_student_data'),
     path('admin/update_student/<int:student_id>', views.update_student_view, name='admin_update_student'),
     path('admin/student/gradebook/<int:student_id>', views.get_student_grades, name='admin_student_gradebook_view'),

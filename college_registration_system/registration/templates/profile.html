@@ -22,6 +22,26 @@
             <label for="zip_code">Zip Code</label>
             <input type="text" class="form-control" id="zip_code" name="zip_code" value="{{ user.zip_code }}">
         </div>
+        {% if user.user_type == "Student" %}
+        <div class="form-group">
+            <label for="major">Major</label>
+            <select class="form-control" id="major" name="major">
+                {% comment %} <option value="-1" {% if not student.major_id %}selected{% endif %}>Undecided</option> {% endcomment %}
+                {% for major in majors %}
+                <option value="{{ major.id }}" {% if major.id == student.major_id.id %}selected{% endif %}>{{ major.major_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="minor">Minor</label>
+            <select class="form-control" id="minor" name="minor">
+                <option value="-1" {% if not student.minor_id %}selected{% endif %}>None</option>
+                {% for minor in minors %}
+                <option value="{{ minor.id }}" {% if minor.id == student.minor_id.id %}selected{% endif %}>{{ minor.minor_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
         <div class="form-group">
             <label for="old_password">Old Password</label>
             <input type="password" class="form-control" id="old_password" name="old_password">

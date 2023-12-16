@@ -826,6 +826,16 @@ def update_user(request):
                 student.enrollment_year = form.cleaned_data.get('enrollment_year')
                 student.student_type = form.cleaned_data.get('student_type')
                 student.save()
+                if student.student_type == 'Undergraduate':
+                    ug, created = Undergraduate.objects.get_or_create(student=student)
+                    if ug.undergrad_student_type is None:
+                        ug.undergrad_student_type = 'Parttime'
+                        ug.save()
+                elif student.student_type == 'Graduate':
+                    grad, created = Graduate.objects.get_or_create(student=student)
+                    if grad.grad_student_type is None:
+                        grad.grad_student_type = 'Parttime'
+                        grad.save()
             elif user_type == 'Faculty':
                 faculty, created = Faculty.objects.get_or_create(user=user_instance)
                 faculty.rank = form.cleaned_data.get('rank')

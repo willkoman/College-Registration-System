@@ -116,7 +116,7 @@
 {% if messages %}
   <div id="toast-container">
     {% for message in messages %}
-        <div class="toast {% if 'Error' in message.tags %}toast-error{% elif 'Success' in message.tags %}toast-success{% endif %}" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true" data-delay="5000">
+        <div class="toast {% if 'Error' in message.tags %}toast-error{% elif 'Success' in message.tags %}toast-success{% endif %}" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true" data-delay="10000">
             <div class="toast-header {% if 'Error' in message.tags %}toast-error{% elif 'Success' in message.tags %}toast-success{% endif %}">
                 <strong class="mr-auto">Notification</strong>
                 <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">

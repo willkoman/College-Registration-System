@@ -183,6 +183,7 @@ class Student(models.Model):
     studentID = models.IntegerField(unique=True, blank=True, null=True)
     major_id = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True, blank=True)
     minor_id = models.ForeignKey('Minor', on_delete=models.SET_NULL, null=True, blank=True)
+    fac_advisor_id = models.ForeignKey('Faculty', on_delete=models.SET_NULL, null=True, blank=True)
     enrollment_year = models.IntegerField(null=True)
     STUDENT_TYPE_CHOICES = [
         ('Undergraduate', 'Undergraduate'),

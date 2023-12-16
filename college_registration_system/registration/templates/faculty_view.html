@@ -41,7 +41,7 @@
             {% endfor %}
         </tbody>
     </table>
-    {% if manager %}
+    {% comment %} {% if manager %} {% endcomment %}
     <h3 class="text-center">You are currently supervising the following students:</h3>
     {% comment %} <ul class = "text-center list-unstyled">
         {% for student in students.all %}
@@ -75,7 +75,7 @@
             {% endfor %}
         </tbody>
     </table>
-    {% endif %}
+    {% comment %} {% endif %} {% endcomment %}
 </div>
 
 <!-- Modal -->
@@ -141,6 +141,8 @@
             });
 
             $('#historyTable').DataTable();
+
+            $('#historyModalLabel').text('Student History for: ' + $(this).data('student-id'));
 
 
             // Show modal

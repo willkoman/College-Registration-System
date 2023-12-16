@@ -1419,13 +1419,16 @@ def faculty_view(request):
         'faculty': fac,
     }
     context['courses'] = CourseSection.objects.filter(faculty=fac)
-    context['manager'] = Department.objects.filter(manager_id=fac)
+    context['manager'] = Department.objects.filter(manager_id=fac) | Department.objects.filter(chair_id=fac)
 
     if context['manager'].exists():
         #get major in department
         context['major'] = Major.objects.filter(department=context['manager'][0])
         #get all students in major
         students = Student.objects.filter(major_id=context['major'][0])
+        #add any students where faculty is advisor
+        students = students | Student.objects.filter(fac_advisor_id=fac)
+
         #attach email to each student from login to context
         context['students'] = []
         for student in students:

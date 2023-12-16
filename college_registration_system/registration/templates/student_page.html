@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
 
-    <div class="container mt-5">
+    <div class="container mt-5" style="text-align: center">
         <h1>Welcome to Michael Hawk University, {{ username }}!</h1>
         <h2>You are a: {{ usertype }}</h2>
 
@@ -28,18 +28,54 @@
                 {% endif %}
             {% endif %}
             <h2>Your Registered Sessions</h2>
-            <ul>
+            <table class="table" id="enrollment-table">
+                <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Semester</th>
+                    <th>Section</th>
+                    <th>Grade</th>
+                </tr>
+                </thead>
+                <tbody>
                 {% for registration in enrollment %}
-                    <li>{{ registration.section.course }} - {{registration.grade}}</li>
+                    {% comment %} <li>{{ registration.section.course }} - {{registration.grade}}</li> {% endcomment %}
+                    {% if registration.grade == "NA" %}
+
+                    <tr>
+                        <td>{{ registration.section.course }}</td>
+                        <td>{{ registration.section.semester }}</td>
+                        <td>{{ registration.section.crn }}</td>
+                        <td>{{ registration.grade }}</td>
+                    </tr>
+                    {% endif %}
                 {% endfor %}
-            </ul>
+                </tbody>
+            </table>
 
             <h2>Your Total Course History</h2>
-            <ul>
-                {% for course in student_history %}
-                    <li>{{ course.section.course }} - {{course.grade}}</li>
+            <table class="table" id="history-table">
+                <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Semester</th>
+                    <th>Section</th>
+                    <th>Grade</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for registration in student_history %}
+                    {% comment %} <li>{{ registration.section.course }} - {{registration.grade}}</li> {% endcomment %}
+                    <tr>
+                        <td>{{ registration.section.course }}</td>
+                        <td>{{ registration.section.semester }}</td>
+                        <td>{{ registration.section.crn }}</td>
+                        <td>{{ registration.grade }}</td>
+                    </tr>
+
                 {% endfor %}
-            </ul>
+            </tbody>
+            </table>
 
             <!-- links to enrollment.html and student_history.html -->
             <a class="btn btn-primary" href="/enrollment">View Registered Sessions</a>
@@ -56,3 +92,23 @@
         {% endif %}
     </div>
 {% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $('#enrollment-table').DataTable( {
+            "paging": false,
+            "searching": false,
+            "info": false,
+            responsive: true
+        } );
+        $('#history-table').DataTable( {
+            "paging": false,
+            "searching": false,
+            "info": false,
+            responsive: true
+        } );
+    } );
+</script>
+{% endblock %}
+```

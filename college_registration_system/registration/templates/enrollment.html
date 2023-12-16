@@ -69,7 +69,7 @@
                     <td>{{ registration.section.semester }}</td>
                     <td>{{ registration.section.timeslot }}</td>
                     <td>
-                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmDropModal{{ registration.section.crn }}">
+                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmDropModal{{ registration.section.crn }}" {% if registration.is_deletable == True %} {% else %} disabled {% endif %}>
                             Drop Course
                         </button>
                         <!-- Modal -->
@@ -110,7 +110,13 @@
 <script>
 $(document).ready(function() {
     $('#registeredSessionsTable').DataTable(
-        {responsive: true}
+        {
+            responsive: true,
+            paging: false,
+            searching: false,
+            info: false,
+            order: [[ 3, "asc" ]]
+        }
     );
 });
 // add FullCalendar
@@ -128,14 +134,16 @@ document.addEventListener('DOMContentLoaded', function() {
         allDaySlot: false,
         events: [
             {% for registration in enrollment %}
-            {
-                title: '{{ registration.section.course.course_name }}',
-                daysOfWeek: {{ registration.day_indices }},
-                startTime: '{{ registration.section.timeslot.periods.first.start_time|date:"H:i" }}', // 24-hour format
-                endTime: '{{ registration.section.timeslot.periods.first.end_time|date:"H:i" }}', // 24-hour format
-                allDay: false,
-                url: '/course/{{ registration.section.course.course_id }}'
-            },
+                {% if registration.section.semester.semester_name == "Spring 2024" %}
+                    {
+                        title: '{{ registration.section.course.course_name }}',
+                        daysOfWeek: {{ registration.day_indices }},
+                        startTime: '{{ registration.section.timeslot.periods.first.start_time|date:"H:i" }}', // 24-hour format
+                        endTime: '{{ registration.section.timeslot.periods.first.end_time|date:"H:i" }}', // 24-hour format
+                        allDay: false,
+                        url: '/course/{{ registration.section.course.course_id }}'
+                    },
+                {% endif %}
             {% endfor %}
         ],
     });

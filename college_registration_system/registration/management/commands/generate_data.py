@@ -3,7 +3,8 @@ import uuid
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from faker import Faker
-from registration.models import Building, Department, Room, Semester,CoursePrereq, Timeslot, User, Student, Faculty, Course, CourseSection, Enrollment, Major, Faculty_FullTime, Faculty_PartTime, Grad_Part_Time, Grad_Full_Time, Undergrad_Part_Time, Undergrad_Full_Time, Graduate, Undergraduate,Major,Minor,MajorDegreeRequirements,MinorDegreeRequirements
+from django.db.models import Count
+from registration.models import Attendance, Building, Department, Room, Semester,CoursePrereq, StudentHistory, Timeslot, User, Student, Faculty, Course, CourseSection, Enrollment, Major, Faculty_FullTime, Faculty_PartTime, Grad_Part_Time, Grad_Full_Time, Undergrad_Part_Time, Undergrad_Full_Time, Graduate, Undergraduate,Major,Minor,MajorDegreeRequirements,MinorDegreeRequirements
 import datetime as dt
 from collections import defaultdict
 class Command(BaseCommand):
@@ -67,21 +68,24 @@ class Command(BaseCommand):
         self.stdout.write("7: Generate enrollments")
         self.stdout.write("8: Remove underfilled sections")
         self.stdout.write("9: Generate major and minor requirements")
+        self.stdout.write("10: Generate attendances")
         self.stdout.write("0: Delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments")
-        choice = input("Enter your choice (0-9): ")
+        self.stdout.write("Z: Discrepencies Check")
+        choice = input("Enter your choice (0-10,Z): ")
 
         fake = Faker()
 
         if choice == '1':
             self.create_rooms(fake)
-            self.create_majors_minors(fake)
+            # self.create_majors_minors(fake)
             self.create_users(fake)
-            self.create_courses(fake)
+            # self.create_courses(fake)
             self.create_sections(fake)
+            # self.create_major_minor_requirements(fake)
+            # self.create_course_prereqs(fake)
             self.enroll_students(fake)
-            self.create_course_prereqs(fake)
             self.remove_underfilled_sections(fake)
-            self.create_major_minor_requirements(fake)
+            self.generate_attendances(fake)
         elif choice == '2':
             self.create_rooms(fake)
         elif choice == '3':
@@ -98,8 +102,12 @@ class Command(BaseCommand):
             self.remove_underfilled_sections(fake)
         elif choice == '9':
             self.create_major_minor_requirements(fake)
+        elif choice == '10':
+            self.generate_attendances(fake)
         elif choice == '0':
             self.delete_all_data(fake)
+        elif choice == 'Z':
+            self.check_enrollment_conflits(fake)
         else:
             self.stdout.write("Invalid choice.")
 
@@ -142,7 +150,7 @@ class Command(BaseCommand):
                     print(f'Room {room} in {building} already exists')
 
     def create_users(self, fake):
-        for _ in range(800):
+        for _ in range(1000):
 
             user = User.objects.create(
                 id=uuid.uuid4(),
@@ -169,7 +177,7 @@ class Command(BaseCommand):
             s.save()
             print(f'Created student {user.first_name} {user.last_name} with id {s.studentID}')
 
-        for _ in range(300):
+        for _ in range(150):
             user = User.objects.create(
                 id=uuid.uuid4(),
                 first_name=fake.first_name(),
@@ -250,7 +258,7 @@ class Command(BaseCommand):
                             course_name=f'{course_prefix} {major.major_name}',
                             department=major.department,
                             course_type=course_level,
-                            course_number=fake.random_int(min=100, max=499 if course_level == 'UnderGrad' else 899),
+                            course_number=fake.random_int(min=100 if course_level == 'UnderGrad' else 500, max=499 if course_level == 'UnderGrad' else 899),
                             no_of_credits=random.choice([3, 4]),
                             description=f'This is a(n) {course_level} course in {major.major_name}',
                     )
@@ -285,13 +293,15 @@ class Command(BaseCommand):
                 course.save()
 
     def create_sections(self, fake):
-        for semester in Semester.objects.all():
+        for semester in Semester.objects.all().order_by('start_date'):
             # if semester.semester_name == 'Fall 2023':
             #     continue
             faculty_course_count = defaultdict(int)
             for course in Course.objects.all().order_by('?'):
                 # Create 1-2 sections for each course
                 num_of_sections = random.randint(1, 2)
+                if course.course_name.startswith('Advanced Subjects of'):
+                    num_of_sections = random.randint(0, 1)
                 print(f'Creating {num_of_sections} sections for {course.course_name} for {semester}')
 
                 for _ in range(num_of_sections):
@@ -311,58 +321,32 @@ class Command(BaseCommand):
                         # if semester.semester_name == 'Fall 2023':
                         #     continue
                     print(f'Creating section for {course.course_name} taught by {selected_faculty}')
-                    CourseSection.objects.create(
-                        course=course,
-                        available_seats=fake.random_int(min=25, max=50),
-                        faculty=selected_faculty,
-                        semester=semester,
-                        timeslot=fake.random_element(elements=Timeslot.objects.all()),
-                        room=fake.random_element(elements=Room.objects.all()),
-                    )
+                    if course.course_name.startswith('Intro to'):
+                        CourseSection.objects.create(
+                            course=course,
+                            available_seats=fake.random_int(min=50, max=200),
+                            faculty=selected_faculty,
+                            semester=semester,
+                            timeslot=fake.random_element(elements=Timeslot.objects.all()),
+                            room=fake.random_element(elements=Room.objects.all()),
+                        )
+                    else:
+                        CourseSection.objects.create(
+                            course=course,
+                            available_seats=fake.random_int(min=25, max=50),
+                            faculty=selected_faculty,
+                            semester=semester,
+                            timeslot=fake.random_element(elements=Timeslot.objects.all()),
+                            room=fake.random_element(elements=Room.objects.all()),
+                        )
                     # Update the faculty's course count
                     faculty_course_count[selected_faculty.user.id] += 1
 
-    def enroll_students(self, fake):
-        for student in Student.objects.all():
-            for semester in Semester.objects.all():
-                course_limit = 2 if student.student_type == 'PartTime' else 4
-                available_courses = Course.objects.filter(course_type='UnderGrad') if student.student_type == 'Undergraduate' else Course.objects.all()
-                print(f"Available courses for {student}: {available_courses.count()}")
-                for _ in range(course_limit):
-                    section = CourseSection.objects.filter(course__in=available_courses,semester=semester).order_by('?').first()
-                    if section:
-                        if section.available_seats <= 0:
-                            print(f'Section {section} is full! Trying again...')
-                            course_limit += 1
-                            continue
-                        #if timeslot conflicts with another course, try again
-                        if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot,section__semester=section.semester).exists():
-                            print(f"Section {section} conflicts with another course! Trying again...")
-                            course_limit += 1
-                            continue
-                        if semester.semester_name == 'Fall 2023':
-                            Enrollment.objects.create(
-                                student=student,
-                                section=section,
-                                grade=random.choice(['A', 'B', 'C', 'D', 'F']),
-                                date_of_enrollment=dt.date.today()
-                            )
-                        else:
-                            Enrollment.objects.create(
-                                student=student,
-                                section=section,
-                                grade=random.choice(['NA']),
-                                date_of_enrollment=dt.date.today()
-                            )
-                        print(f'Enrolled {student} in {section} for {semester}')
-                        section.available_seats -= 1
-                        section.save()
-                    else:
-                        print(f'No sections available for {student}!')
-
     def remove_underfilled_sections(self, fake):
         for section in CourseSection.objects.all():
-            if section.enrollment_set.count() < 5:
+            # if section.student_history_set.count() < 5:
+            #if amount of student_history objects is less than 5 for section, delete the section
+            if section.studenthistory_set.count() < 5:
                 if section.semester.semester_name=='Spring 2024':
                     continue
                 print(f'Removing section {section}')
@@ -378,7 +362,13 @@ class Command(BaseCommand):
             #add all courses with major name in course name to major requirements
             for course in Course.objects.filter(course_name__contains=major.major_name):
                 major_requirements.courses.add(course)
+            #add other intro courses from same department
+            for course in Course.objects.filter(course_name__startswith='Intro to',department=major.department):
+                #if course is not already in major requirements, add it
+                if not major_requirements.courses.filter(course_name=course.course_name).exists():
+                    major_requirements.courses.add(course)
             major_requirements.save()
+
         #add all courses in minor to minor requirements. each minor has one minor requirements with a many-to-many field for courses
         for minor in Minor.objects.all():
             minor_requirements = MinorDegreeRequirements.objects.create(
@@ -388,6 +378,10 @@ class Command(BaseCommand):
             #add all courses with minor name in course name to minor requirements
             for course in Course.objects.filter(course_name__contains=minor.minor_name):
                 minor_requirements.courses.add(course)
+            for course in Course.objects.filter(course_name__startswith='Intro to',department=major.department):
+                #if course is not already in major requirements, add it
+                if not minor_requirements.courses.filter(course_name=course.course_name).exists():
+                    minor_requirements.courses.add(course)
             minor_requirements.save()
 
         #all requirements should have intro to: english, math, science, and social science and concepts of english, math, science, and social science as prereqs. Some will have intro to chemistry and intro to biology as prereqs
@@ -424,26 +418,274 @@ class Command(BaseCommand):
             minor_requirements.courses.add(Course.objects.get(course_name=f'Concepts of History'))
             minor_requirements.save()
 
+    def enroll_students(self,fake):
+        def get_major_priority_ids(student):
+            # Return a list of course IDs prioritized for the student's major
+            return list(Course.objects.filter(course_name__contains=student.major_id.major_name)
+                                        .values_list('course_id', flat=True))
+
+        def get_major_course_ids(student):
+            # Return a list of course IDs required for the student's major
+            return list(MajorDegreeRequirements.objects.filter(major=student.major_id)
+                                                    .values_list('courses__course_id', flat=True))
+
+        def get_department_course_ids(student):
+            # Return a list of course IDs offered by the student's department
+            return list(Course.objects.filter(department=student.major_id.department)
+                                    .values_list('course_id', flat=True))
+
+        def get_other_course_ids(student):
+            # Return a list of other course IDs
+            return list(Course.objects.exclude(course_id__in=get_major_course_ids(student))
+                                    .values_list('course_id', flat=True))
+
+        def get_available_courses(course_ids, semester, student):
+            # Get sets of course IDs that the student has completed with a grade of 'C' or higher
+            completed_course_ids = set(StudentHistory.objects.filter(
+                student=student,
+                grade__in=['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C']
+            ).values_list('section__course__course_id', flat=True))
+
+            # Get sets of course IDs where the student is currently enrolled in the given semester
+            current_enrollment_ids = set(StudentHistory.objects.filter(
+                student=student,
+                section__semester=semester,
+                grade='NA'
+            ).values_list('section__course__course_id', flat=True))
+
+            # Get sets of course IDs where the student has not met the prerequisites
+            unmet_prereqs_ids = set(CoursePrereq.objects.exclude(
+                pr_course__course_id__in=completed_course_ids
+            ).values_list('course__course_id', flat=True))
+
+            # Get sets of course IDs where in that semester, the student already has a course with the same period on the same day
+            # conflicting_course_ids = set(StudentHistory.objects.filter(
+            #     student=student,
+            #     section__semester=semester,
+            #     section__timeslot__period__in=[section.timeslot.period for section in StudentHistory.objects.filter(student=student, section__semester=semester)]
+            # ).values_list('section__course__course_id', flat=True))
+
+            # Combine the sets and exclude these courses
+            excluded_course_ids = unmet_prereqs_ids.union(completed_course_ids).union(current_enrollment_ids)
+
+            # Filter courses based on the given course IDs and excluding courses with unmet prerequisites or already completed/currently enrolled courses
+            courses_qs = Course.objects.filter(course_id__in=course_ids).exclude(course_id__in=excluded_course_ids)
+            return courses_qs
+
+        def prioritize_sections(available_courses, semester):
+            # Return a list of sections, prioritized by those with the lowest enrollment first
+            sections = []
+            for course in available_courses:
+                sections.extend(list(CourseSection.objects.filter(course=course, semester=semester)
+                                    .annotate(num_enrolled=Count('enrollment'))
+                                    .order_by('num_enrolled')))
+            return sections
+        def enroll_student_in_section(student, section, semester):
+            # Check if the student is already enrolled in the same course for the same semester
+            if not StudentHistory.objects.filter(student=student, section__course=section.course, semester=semester).exists():
+                grade = 'NA' if semester.semester_name == 'Spring 2024' else random.choice(['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F'])
+                if semester.semester_name == 'Spring 2024':
+                    Enrollment.objects.create(
+                        student=student,
+                        section=section,
+                        grade=grade,
+                        date_of_enrollment=dt.date.today()
+                    )
+                else:
+                    StudentHistory.objects.create(
+                        student=student,
+                        section=section,
+                        semester=semester,
+                        grade=grade,
+                    )
+                section.available_seats -= 1
+                section.save()
+
+
+
+        #make sure Fall 2022 followed by Spring 2023 followed by Fall 2023 followed by Spring 2024
+        # all_semesters = Semester.objects.get(semester_name='Fall 2022') | Semester.objects.get(semester_name='Spring 2023') | Semester.objects.get(semester_name='Fall 2023') |
+        semester = Semester.objects.get(semester_name='Spring 2024')
+
+        # for semester in all_semesters:
+        for student in Student.objects.all().order_by('?'):
+            # start_semester = random.choice(all_semesters)
+            # if semester.start_date < start_semester.start_date:
+            #     continue
+
+            if student.student_type=="Undergraduate":
+                undergrad = Undergraduate.objects.get(student=student)
+                if undergrad.undergrad_student_type == 'PartTime':
+                    course_limit = 2
+                else:
+                    course_limit = 4
+            else:
+                grad = Graduate.objects.get(student=student)
+                if grad.grad_student_type == 'PartTime':
+                    course_limit = 2
+                else:
+                    course_limit = 4
+            # course_limit = 2 if student.student_type == 'PartTime' else 4
+            enrolled_courses = Enrollment.objects.filter(student=student).count()
+
+
+
+            for course_ids in [get_major_priority_ids(student), get_major_course_ids(student), get_department_course_ids(student), get_other_course_ids(student)]:
+                available_courses = get_available_courses(course_ids, semester, student)
+                sections_to_enroll = prioritize_sections(available_courses, semester)
+
+                for section in sections_to_enroll:
+                    # If student is already enrolled in the course for this semester, skip this section
+                    if StudentHistory.objects.filter(student=student, section__course=section.course, semester=semester).exists():
+                        continue
+
+                    if enrolled_courses >= course_limit:
+                        break
+
+                    if section.available_seats > 0:
+                        enroll_student_in_section(student, section, semester)
+                        print(f'Enrolled {student} in {section} for {semester}')
+                        enrolled_courses += 1
+
+                        # Update the available courses and sections after successful enrollment
+                        if enrolled_courses < course_limit:
+                            available_courses = get_available_courses(course_ids, semester, student)
+                            sections_to_enroll = prioritize_sections(available_courses, semester)
+
+
+    def generate_attendances(self, fake):
+        for history in StudentHistory.objects.all():
+            print(f'Generating attendances for {history.student} in {history.section}')
+            if history.semester.semester_name != 'Spring 2024':
+                # Iterate through each class day in the semester
+                start_date = history.semester.start_date
+                end_date = history.semester.end_date
+                current_date = start_date
+
+                while current_date <= end_date:
+                    print(f'\tGenerating attendance: {current_date}')
+                    # Check if current date is a valid class day
+                    class_days = [day.weekday for day in history.section.timeslot.days.all()]
+                    if current_date.strftime('%A') in class_days:
+                        # 1/5 chance of being absent
+                        present = random.choice([True, True, True, True, False])
+                        Attendance.objects.create(
+                            student=history.student,
+                            section=history.section,
+                            date_of_class=current_date,
+                            present=present
+                        )
+
+                    # Move to the next day
+                    current_date += dt.timedelta(days=1)
+    def assign_department_staff(self, fake):
+        for dept in Department.objects.all():
+            all_faculty = Faculty.objects.all()
+            valid_faculty = []
+            for faculty in all_faculty:
+                if faculty.departments.filter(department_name=dept.department_name).exists():
+                    valid_faculty.append(faculty)
+
+            dept.chair_id = random.choice(valid_faculty)
+            print(f"Chair of {dept.department_name} is {dept.chair_id}")
+            dept.manager_id = random.choice(valid_faculty)
+            print(f"Manager of {dept.department_name} is {dept.manager_id}")
+            dept.save()
+
+    def check_enrollment_conflits(self, fake):
+        #print how many students are fulltime and only enrolled in 2 courses
+        countFTNotEnrolledIn2 = 0
+        for student in Student.objects.all():
+
+            is_FT = False
+            grad=None
+            undergrad=None
+            if student.student_type=="Undergraduate":
+                undergrad = Undergraduate.objects.get(student=student)
+                if undergrad.undergrad_student_type == 'PartTime':
+                    is_FT = False
+                else:
+                    is_FT = True
+            else:
+                grad = Graduate.objects.get(student=student)
+                if grad.grad_student_type == 'PartTime':
+                    is_FT = False
+                else:
+                    is_FT = True
+            if is_FT:
+                if Enrollment.objects.filter(student=student).count() <= 2:
+                    countFTNotEnrolledIn2 += 1
+            else:
+                pass
+        print(f"{countFTNotEnrolledIn2} students are fulltime and only enrolled in 2 courses")
+        #if any student is enrolled in two sections of the same course in the same semester, delete one of the enrollments
+        for student in Student.objects.all():
+            is_FT = False
+            grad=None
+            undergrad=None
+            if student.student_type=="Undergraduate":
+                undergrad = Undergraduate.objects.get(student=student)
+                if undergrad.undergrad_student_type == 'PartTime':
+                    is_FT = False
+                else:
+                    is_FT = True
+            else:
+                grad = Graduate.objects.get(student=student)
+                if grad.grad_student_type == 'PartTime':
+                    is_FT = False
+                else:
+                    is_FT = True
+            for enroll in Enrollment.objects.filter(student=student):
+                section = enroll.section
+                if Enrollment.objects.filter(student=student, section=section).count() > 1:
+                    print(f"Student {student} is enrolled in {section} more than once. Deleting one of the enrollments...")
+                    Enrollment.objects.filter(student=student, section=section).first().delete()
+                #if student is enrolled in two sections of the same day and time, delete one of the enrollments
+                for other_enroll in Enrollment.objects.filter(student=student):
+                    other_section = other_enroll.section
+                    if section != other_section:
+                        if section.timeslot == other_section.timeslot:
+                            if Enrollment.objects.filter(student=student, section=section).exists() and Enrollment.objects.filter(student=student, section=other_section).exists():
+                                print(f"Student {student} is enrolled in {section} and {other_section} at the same time. Deleting one of the enrollments...")
+                                Enrollment.objects.filter(student=student, section=section).first().delete()
+                if Enrollment.objects.filter(student=student).count() <= 2:
+                    if grad is not None:
+                        grad.grad_student_type = 'PartTime'
+                        grad.save()
+                    else:
+                        undergrad.undergrad_student_type = 'PartTime'
+                        undergrad.save()
+
+
+
+            if not is_FT:
+                #if student is part time yet enrolled in more than 2 courses, delete enrollments until only 2 remain
+                if Enrollment.objects.filter(student=student).count() > 2:
+                    print(f"Student {student} is enrolled in more than 2 courses. Deleting enrollments until only 2 remain...")
+                    while Enrollment.objects.filter(student=student).count() > 2:
+                        Enrollment.objects.filter(student=student).first().delete()
+
+
     def delete_all_data(self, fake):
         #delete all data except users: Super Admin, William Krasnov, and R Khusro, and departments
         print("Deleting all users except: Super Admin, William Krasnov, and R Khusro, and departments...")
         User.objects.exclude(first_name='Super').exclude(last_name='Krasnov').exclude(first_name='R').exclude(first_name='Statistics').exclude(first_name='Stats').delete()
         print("Deleting all rooms...")
         Room.objects.all().delete()
-        print("Deleting all courses...")
-        Course.objects.all().delete()
+        # print("Deleting all courses...")
+        # Course.objects.all().delete()
         print("Deleting all sections...")
         CourseSection.objects.all().delete()
         print("Deleting all enrollments...")
         Enrollment.objects.all().delete()
-        print("Deleting all Majors and Minors...")
-        Major.objects.all().delete()
-        Minor.objects.all().delete()
-        print("Deleting all Major and Minor Requirements...")
-        MajorDegreeRequirements.objects.all().delete()
-        MinorDegreeRequirements.objects.all().delete()
-        print("Deleting all Course Prereqs...")
-        CoursePrereq.objects.all().delete()
+        # print("Deleting all Majors and Minors...")
+        # # Major.objects.all().delete()
+        # Minor.objects.all().delete()
+        # print("Deleting all Major and Minor Requirements...")
+        # MajorDegreeRequirements.objects.all().delete()
+        # MinorDegreeRequirements.objects.all().delete()
+        # print("Deleting all Course Prereqs...")
+        # CoursePrereq.objects.all().delete()
         print("deleting all faculty and student data...")
         Faculty_FullTime.objects.all().delete()
         Faculty_PartTime.objects.all().delete()

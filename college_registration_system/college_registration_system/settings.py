@@ -29,7 +29,7 @@ ALLOWED_HOSTS = ['127.0.0.1','michaelhawk.us.to','52.6.154.142','localhost']
 
 AUTH_USER_MODEL = 'registration.Login'
 
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 70000
 
 # Application definition
 

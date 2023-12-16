@@ -26,6 +26,29 @@ class RoomAdmin(admin.ModelAdmin):
         return f"{obj.building.bldg_name} {str(obj.room_no).rjust(3, '0')}"
     formatted_room_no.admin_order_field = 'room_no'  # Allows column order sorting
     formatted_room_no.short_description = 'Room No'
+def add_specific_course_to_requirements(modeladmin, request, queryset):
+    # Specify the course to add (e.g., by its ID)
+    specified_course_name = "Intro to Fitness"  # Replace with the actual course ID
+
+    # Fetch the course object
+    specified_course = Course.objects.get(course_name=specified_course_name)
+
+    # Iterate over the queryset and add the course if not present
+    for requirement in queryset:
+        if not requirement.courses.filter(course_name=specified_course_name).exists():
+            requirement.courses.add(specified_course)
+
+add_specific_course_to_requirements.short_description = "Add specified course to selected requirements"
+
+class MajorDegreeRequirementsAdmin(admin.ModelAdmin):
+    filter_horizontal = ('courses',)
+    search_fields = ['courses__course_name']
+    actions = [add_specific_course_to_requirements]
+
+class MinorDegreeRequirementsAdmin(admin.ModelAdmin):
+    filter_horizontal = ('courses',)
+    search_fields = ['courses__course_name']
+    actions = [add_specific_course_to_requirements]
 
 class UserAdmin(admin.ModelAdmin):
     #search by name
@@ -96,8 +119,8 @@ admin.site.register(Hold)
 admin.site.register(Timeslot)
 admin.site.register(Major)
 admin.site.register(Minor)
-admin.site.register(MajorDegreeRequirements)
-admin.site.register(MinorDegreeRequirements)
+admin.site.register(MajorDegreeRequirements, MajorDegreeRequirementsAdmin)
+admin.site.register(MinorDegreeRequirements, MinorDegreeRequirementsAdmin)
 # admin.site.register(TimeSlotDay)
 # admin.site.register(TimeSlotPeriod)
 admin.site.register(Day)

@@ -460,6 +460,8 @@ class Semester(models.Model):
     semester_year = models.IntegerField()
     start_date = models.DateField(default='2000-01-01')
     end_date = models.DateField(default='2000-01-01')
+    add_drop_start_date = models.DateField(default='2000-01-01', null=True, blank=True)
+    add_drop_end_date = models.DateField(default='2000-01-01', null=True, blank=True)
 
     def __str__(self):
         return self.semester_name

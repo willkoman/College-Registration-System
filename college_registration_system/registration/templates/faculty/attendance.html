@@ -22,9 +22,13 @@
             </select>
         </div>
         {% if disabled == True %}
-            <p class="text-danger">It is outside the current valid time period for this attendance. This form has been disabled.</p>
-            <p class="text-danger">Valid time period: {{ start_date}} to {{ end_date}}</p>
-            <p class="text-danger">Current time: {{ current_date }}</p>
+        <div class="form-group"  style = "background-color: #ffcccc; padding: 10px; border-radius: 10px; text-align: center;">
+            <p class="text-danger">
+                It is outside the current valid time period for this attendance. This form has been disabled.</p>
+            {% for r in reason %}
+            <p class="text-danger">{{r}}</p>
+            {% endfor %}
+        </div>
         {% endif %}
         <table class="table table-bordered" id="attendanceTable">
             <thead>

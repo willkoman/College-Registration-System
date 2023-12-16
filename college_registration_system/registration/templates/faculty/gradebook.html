@@ -21,14 +21,19 @@
                         <td>
                             <!-- Make grade editable -->
                             <input type="hidden" name="enrollments[]" value="{{ enrollment.id }}">
-
+                            {% if disabled == True %}
+                            <p class="form-control-static">{{ enrollment.grade }}</p>
+                            {% else %}
                             <input type="text" name="grades[]" value="{{ enrollment.grade }}">
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if disabled == False %}
         <button type="submit" class="btn btn-primary">Update Grades</button>
+        {% endif %}
     </form>
 {% endblock %}
 

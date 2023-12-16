@@ -42,6 +42,7 @@
                     <th>Course</th>
                     <th>Department</th>
                     <th>Grade</th> <!-- Added Grade column -->
+                    <th>Semester</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,6 +51,7 @@
                         <td>{{ course.course.course_name }}</td>
                         <td>{{ course.course.department }}</td>
                         <td>{{ course.grade }}</td>  
+                        <td>{{ course.semester }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

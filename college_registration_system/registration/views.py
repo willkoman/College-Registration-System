@@ -23,6 +23,7 @@ import json
 
 
 add_drop_periods = Semester.objects.all().order_by('start_date')
+grade_dict = {'A':4,'A-':3.5,'B+':3.25,'B':3,'B-':2.75,'C+':2.25,'C':2,'C-':1.75,'D+':1.25,'D':1,'D-':0.75,'F':0,'NA':0}
 #add_drop periods end 2 weeks after the start date of the semester and start 4 weeks before the start date of the semester
 for period in add_drop_periods:
     period.add_drop_end_date = period.start_date + datetime.timedelta(days=14)
@@ -322,10 +323,10 @@ def get_holidays():
 def calendar_view(request):
     holidays = get_holidays()
     events = [
-        {'title': 'Add Drop Starts For Fall 2023', 'start': str(add_drop_periods[0].add_drop_start_date)},
-        {'title': 'Add Drop Ends For Fall 2023', 'start': str(add_drop_periods[0].add_drop_end_date)},
-        {'title': 'Add Drop Starts For Spring 2024', 'start': str(add_drop_periods[1].add_drop_start_date)},
-        {'title': 'Add Drop Ends for Spring 2024', 'start': str(add_drop_periods[1].add_drop_end_date)},
+        {'title': 'Add Drop Starts For Fall 2023', 'start': str(Semester.objects.get(semester_name='Fall 2023').add_drop_start_date)},
+        {'title': 'Add Drop Ends For Fall 2023', 'start': str(Semester.objects.get(semester_name='Fall 2023').add_drop_end_date)},
+        {'title': 'Add Drop Starts For Spring 2024', 'start': str(Semester.objects.get(semester_name='Spring 2024').add_drop_start_date)},
+        {'title': 'Add Drop Ends for Spring 2024', 'start': str(Semester.objects.get(semester_name='Spring 2024').add_drop_end_date)},
     ]
     for event in events:
         event['color'] = 'purple'
@@ -340,10 +341,10 @@ def events_view(request):
     # Example data - mock events
     events = [
         {"date": "2023-09-01", "event": "Fall Semester Begins"},
-        {"date": str(add_drop_periods[0].add_drop_start_date), "event": "Fall Add/Drop Period Begins"},
-        {"date": str(add_drop_periods[0].add_drop_end_date), "event": "Fall Add/Drop Period Ends"},
-        {"date": str(add_drop_periods[1].add_drop_start_date), "event": "Spring Add/Drop Period Ends"},
-        {"date": str(add_drop_periods[1].add_drop_end_date), "event": "Spring Add/Drop Period Ends"},
+        {"date": Semester.objects.get(semester_name="Fall 2023").add_drop_start_date, "event": "Fall Add/Drop Period Begins"},
+        {"date": Semester.objects.get(semester_name="Fall 2023").add_drop_end_date, "event": "Fall Add/Drop Period Ends"},
+        {"date": Semester.objects.get(semester_name='Spring 2024').add_drop_start_date, "event": "Spring Add/Drop Period Ends"},
+        {"date": Semester.objects.get(semester_name='Spring 2024').add_drop_end_date, "event": "Spring Add/Drop Period Ends"},
         {"date": "2023-09-05", "event": "Labor Day - No Classes"},
         {"date": "2023-10-15", "event": "Midterm Exams Week"},
         {"date": "2023-11-24", "event": "Thanksgiving Break"},
@@ -456,16 +457,23 @@ def student_view(request):
         print("Student:", context['student'])  # Debugging line
         context['enrollment'] = Enrollment.objects.filter(student=context['student'])
         context['student_history'] = StudentHistory.objects.filter(student=context['student'])
+        context['holds'] = Hold.objects.filter(student=context['student'])
 
-    elif request.user.user.user_type == 'Faculty':
-        #get faculty with that user and append to context
-        context['faculty'] = Faculty.objects.get(user=user)
-        try:
-            context['office'] = Faculty_FullTime.objects.get(faculty=context['faculty']).office
-        except:
-            context['office'] = Faculty_PartTime.objects.get(faculty=context['faculty']).office
-
-        print("Faculty:", context['faculty'])
+        #if student has registered for more than 2 courses this semester, they are now a fulltime student
+        if (Enrollment.objects.filter(student=context['student'], section__semester=Semester.objects.get(semester_name='Fall 2023')).count() > 2) or \
+            (Enrollment.objects.filter(student=context['student'], section__semester=Semester.objects.get(semester_name='Spring 2024')).count() > 2):
+            if context['student'].student_type == 'Undergraduate':
+                #get undergrad object and change to fulltime
+                undergrad = Undergraduate.objects.get(student=context['student'])
+                undergrad.undergrad_student_type = 'Fulltime'
+                undergrad.save()
+                context['undergrad'] = undergrad
+            elif context['student'].student_type == 'Graduate':
+                #get grad object and change to fulltime
+                grad = Graduate.objects.get(student=context['student'])
+                grad.grad_student_type = 'Fulltime'
+                grad.save()
+                context['grad'] = grad
     return render(request, 'student_page.html', context)
 
 @login_required(login_url='user_login')
@@ -498,6 +506,21 @@ def enrollment_view(request):
         'usertype': request.user.user.user_type,
         'enrollment': enrollments,
     }
+    #if enrollment is past the add_drop period, then it is not deletable
+    for i, enrollment in enumerate(context['enrollment']):
+        print(enrollment.section.semester)
+        is_fall_2023 = enrollment.section.semester.semester_name == "Fall 2023"
+        is_spring_2024 = enrollment.section.semester.semester_name == "Spring 2024"
+
+        if (is_fall_2023 and datetime.date.today() > Semester.objects.get(semester_name='Fall 2023').add_drop_end_date) or \
+        (is_spring_2024 and datetime.date.today() > Semester.objects.get(semester_name='Spring 2024').add_drop_end_date):
+            enrollment.is_deletable = False
+        else:
+            enrollment.is_deletable = True
+
+        #if it is not either fall 2023 or spring 2024, then it is not deletable
+        if not (is_fall_2023 or is_spring_2024):
+            enrollment.is_deletable = False
 
 
     return render(request, 'enrollment.html', context)
@@ -508,19 +531,32 @@ def register(request, section_id):
         messages.error(request, f'You are not authorized to access this resource.',extra_tags='Error')
         return redirect('/schedule/')
     #distionary assigning number to grade
-    grade_dict = {'A':4,'A-':3.5,'B+':3.25,'B':3,'B-':2.75,'C+':2.25,'C':2,'C-':1.75,'D+':1.25,'D':1,'D-':0.75,'F':0,'NA':0}
+
     try:
         student = request.user.user.student
         section = CourseSection.objects.get(crn=section_id)
         enrollment = Enrollment(student=student, section=section, date_of_enrollment=datetime.date.today(), grade='NA')
 
         '''All the checks for registration'''
-
+        #If semester add drop is over, raise exception
+        semes = section.semester
+        #if semester is not fall 2023 or spring 2024, raise exception
+        if semes.semester_name not in ['Fall 2023', 'Spring 2024']:
+            raise Exception(f"Registration is not available for {section.semester}.")
+        # semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
+        semes = Semester.objects.get(semester_name=semes.semester_name)
+        if datetime.date.today() > semes.add_drop_end_date:
+            raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+        if datetime.date.today() < semes.add_drop_start_date:
+            raise Exception(f"Add/Drop period for {section.semester} has not started yet. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
         # if enrollment already exists with the student and same section, raise an exception
         if Enrollment.objects.filter(student=student, section=section).exists():
             raise Exception("You have already registered for this section.")
         if Enrollment.objects.filter(student=student).count() >= 4:
-            raise Exception("You have already registered for 4 courses in this semester.")
+            #only 4 max per semester
+            if Enrollment.objects.filter(student=student, section__semester=section.semester).count() >= 4:
+
+                raise Exception("You have already registered for 4 courses in this semester.")
         #if same timeslot in coursesection already in enrollment, raise exception
         if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
             if section.semester == Enrollment.objects.get(student=student, section__timeslot=section.timeslot).section.semester:
@@ -544,14 +580,7 @@ def register(request, section_id):
             holdTypes = set([hold.hold_type for hold in holdTypes])
             holdTypes_str = ', '.join(holdTypes)
             raise Exception(f"You have the following hold(s) on your account:\n{holdTypes_str}.\nPlease contact the system administrator.")
-        #if course.semester is the first semester, then it is add_drop_periods[0], else it is add_drop_periods[1]
         #TODO: UNCOMMENT WHEN NO LONGER TESTING
-        semes = section.semester
-        semes = add_drop_periods[0] if semes == add_drop_periods[0] else add_drop_periods[1]
-        if datetime.date.today() > semes.add_drop_end_date:
-            raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
-        if datetime.date.today() < semes.add_drop_start_date:
-            raise Exception(f"Add/Drop period for {section.semester} has not started yet. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
         '''All checks passed, save enrollment'''
                 #if student has registered for more than 2 courses this semester, they are now a fulltime student
         if Enrollment.objects.filter(student=student, section__semester=section.semester).count() > 2:
@@ -634,12 +663,27 @@ def degreeAudit_view(request):
     #get courses from course sections in studenthistory
     context['inprogress_courses'] = Enrollment.objects.filter(student=student)
     context['inprogress_courses'] = [course.section.course for course in context['inprogress_courses']]
+    context['not_good_courses'] = []
     context['completed_courses'] = StudentHistory.objects.filter(student=student)
     #completed courses are not currently in progress
     context['completed_courses'] = [course.section.course for course in context['completed_courses'] if course.section.course not in context['inprogress_courses']]
+    grade_order = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C']
+
+    for course in list(context['completed_courses']):  # Create a copy of the list to iterate over
+        # Fetch all grades for this course
+        grades = StudentHistory.objects.filter(student=student, section__course=course).values_list('grade', flat=True)
+
+        # Find the highest grade
+        highest_grade = max(grades, key=lambda grade: grade_order.index(grade) if grade in grade_order else -1)
+
+        # Check if the highest grade is lower than a C
+        if highest_grade not in grade_order:
+            context['not_good_courses'].append(course)
+            context['completed_courses'].remove(course)
+
     print("Inprogress Courses:", context['inprogress_courses'])
     print("Completed Courses:", context['completed_courses'])
-
+    print("Not Good Courses:", context['not_good_courses'])
     # Calculate credits
     context['completed_credits'], context['inprogress_credits'] = calculate_credits(student)
 
@@ -651,7 +695,7 @@ def calculate_credits(student):
     enrollments = StudentHistory.objects.filter(student=student)
     for enrollment in enrollments:
         course_credits = enrollment.section.course.no_of_credits
-        if enrollment.grade and enrollment.grade not in ['F', 'NA']:
+        if enrollment.grade and enrollment.grade not in ['C-','D+','D','D-','F', 'NA']:
             completed_credits += course_credits
         elif enrollment.grade == 'NA':
             inprogress_credits += course_credits
@@ -970,7 +1014,7 @@ def list_students_view(request):
         messages.error(request, "You are not authorized to view this page.")
         return redirect('/homepage/')
 
-    students = Student.objects.all()[:100]
+    students = Student.objects.all()
 
     for student in students:
         if student.student_type == 'Undergraduate':
@@ -1420,7 +1464,11 @@ def gradebook_view(request, section_id):
         'usertype': request.user.user.user_type,
         'section': section,
     }
-    context['enrollments'] = Enrollment.objects.filter(section=section)
+    #if date is before semester end date, pass disabled = true to template
+    if (datetime.date.today() < (section.semester.end_date - datetime.timedelta(days=5))) or (datetime.date.today() > (section.semester.end_date + datetime.timedelta(days=14))):
+        context['disabled'] = True
+
+    context['enrollments'] = StudentHistory.objects.filter(section=section)
     return render(request, 'faculty/gradebook.html', context)
 @login_required(login_url='user_login')
 def update_gradebook(request):
@@ -1454,7 +1502,7 @@ def roster_view(request, section_id):
         'section': section,
     }
 
-    enrollments = Enrollment.objects.filter(section=section)
+    enrollments = StudentHistory.objects.filter(section=section)
     context['enrollments'] = []
     for enrollment in enrollments:
         #attach student email to enrollment
@@ -1474,7 +1522,7 @@ def attendance_view(request, section_id):
     section = CourseSection.objects.get(crn=section_id)
     date_str = request.GET.get('date')
     date = parse_date(date_str) if date_str else None
-    enrollments = Enrollment.objects.filter(section=section)
+    enrollments = StudentHistory.objects.filter(section=section)
     attendances = {}
     previous_attendances = Attendance.objects.filter(section=section)
     #get dates of previous attendances
@@ -1512,11 +1560,30 @@ def attendance_view(request, section_id):
     end_time = section.timeslot.periods.all()[0].end_time
     end_time = datetime.time(end_time.hour, end_time.minute, end_time.second)
     print("End Time:", end_time)
-    #start and end are datetime.time objects so we need to add an hour to end_time to compare
-    if current_time < start_time or current_time > (end_time):
+    #if current time is outside of class time, or if date is not today, pass disabled = true to template
+    #if section.timeslot.day is not today (Monday, Tuesday, etc), pass disabled = true to template
+    if (current_time < start_time or current_time > end_time) or \
+        (date != datetime.date.today()) or (date is None) or \
+        not any(day.weekday == datetime.date.today().strftime('%A') for day in section.timeslot.days.all()):
         context['disabled'] = True
     else:
         context['disabled'] = False
+    if date is None:
+        date = (datetime.datetime.now().date() - datetime.timedelta(hours=5))
+    context['reason'] = []
+    if (current_time < start_time or current_time > (end_time)):
+        context['reason'].append('Current time is outside of class time.')
+    if (date != datetime.datetime.now().date()):
+        context['reason'].append('Date is not today.')
+    today_weekday = datetime.date.today().strftime("%A")
+    if all(day.weekday != today_weekday for day in section.timeslot.days.all()):
+        context['reason'].append('Class is not held on this day: ' + today_weekday + '.')
+    # if date is earlier than semester.start_date or later than semester.end_date, pass disabled = true to template
+    semester = section.semester
+
+    if date < semester.start_date or date > semester.end_date:
+        context['disabled'] = True
+        context['reason'].append('Date is not within the semester.')
     context['start_date'] = start_time
     context['end_date'] = end_time
     context['current_date'] = current_time

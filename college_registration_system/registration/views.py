@@ -549,6 +549,12 @@ def register(request, section_id):
             raise Exception(f"Add/Drop period for {section.semester} has ended. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
         if datetime.date.today() < semes.add_drop_start_date:
             raise Exception(f"Add/Drop period for {section.semester} has not started yet. The period is {semes.add_drop_start_date} - {semes.add_drop_end_date}")
+        #if student has completed course already with grade C or higher, raise exception
+        if Enrollment.objects.filter(student=student, section__course=section.course).exists():
+            raise Exception("You are already registered for this course.")
+        if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
+            if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
+                raise Exception("You have already completed this course.")
         # if enrollment already exists with the student and same section, raise an exception
         if Enrollment.objects.filter(student=student, section=section).exists():
             raise Exception("You have already registered for this section.")
@@ -561,12 +567,7 @@ def register(request, section_id):
         if Enrollment.objects.filter(student=student, section__timeslot=section.timeslot).exists():
             if section.semester == Enrollment.objects.get(student=student, section__timeslot=section.timeslot).section.semester:
                 raise Exception("You have already registered for a course in this timeslot for this semester.")
-        #if student has completed course already with grade C or higher, raise exception
-        if Enrollment.objects.filter(student=student, section__course=section.course).exists():
-            raise Exception("You are already registered for this course.")
-        if StudentHistory.objects.filter(student=student, section__course=section.course).exists():
-            if grade_dict[StudentHistory.objects.get(student=student, section__course=section.course).grade] >= grade_dict['C']:
-                raise Exception("You have already completed this course.")
+
         if CoursePrereq.objects.filter(course=section.course).exists():
             prereqs = CoursePrereq.objects.filter(course=section.course)
             for prereq in prereqs:

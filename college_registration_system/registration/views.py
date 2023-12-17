@@ -321,6 +321,15 @@ def get_holidays():
 
 
 def calendar_view(request):
+
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     holidays = get_holidays()
     events = [
         {'title': 'Add Drop Starts For Fall 2023', 'start': str(Semester.objects.get(semester_name='Fall 2023').add_drop_start_date)},
@@ -333,11 +342,21 @@ def calendar_view(request):
     combined_events = holidays + events  # Combine holidays and events
 
     context = {
-        'events': json.dumps(combined_events)  # Convert to JSON
+        'events': json.dumps(combined_events),  # Convert to JSON
+        'username': username,
+        'usertype': usertype,
     }
     return render(request, 'calendar.html', context)
 
 def events_view(request):
+    if request.user.is_authenticated:
+        user = request.user.user
+        username = user.first_name + ' ' + user.last_name
+        usertype = user.user_type
+    else:
+        username = "Visitor"
+        usertype = None
+
     # Example data - mock events
     events = [
         {"date": "2023-09-01", "event": "Fall Semester Begins"},
@@ -356,7 +375,10 @@ def events_view(request):
         {"date": "2024-05-30", "event": "Commencement Ceremony"}
     ]
     context = {
-        'events': events
+        'events': events,
+        'username': username,
+        'usertype': usertype,
+
     }
     return render(request, 'events.html', context)
 
